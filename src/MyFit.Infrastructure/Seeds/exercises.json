@@ -1,0 +1,142 @@
+[
+  {
+    "name": "Bench Press",
+    "description": "A compound chest exercise performed lying on a bench",
+    "muscleGroup": 1,
+    "difficulty": 2,
+    "instructions": "1. Lie flat on the bench with feet on the floor\n2. Grip the bar slightly wider than shoulder-width\n3. Lower the bar to your chest\n4. Press the bar back up until arms are extended\n5. Repeat for desired reps"
+  },
+  {
+    "name": "Squat",
+    "description": "A fundamental lower body compound exercise",
+    "muscleGroup": 6,
+    "difficulty": 2,
+    "instructions": "1. Place barbell on upper back\n2. Stand with feet shoulder-width apart\n3. Lower body by bending knees and hips\n4. Go down until thighs are parallel to floor\n5. Push through heels to return to starting position"
+  },
+  {
+    "name": "Deadlift",
+    "description": "A total body compound exercise for strength and mass",
+    "muscleGroup": 10,
+    "difficulty": 3,
+    "instructions": "1. Stand with feet hip-width apart, bar over mid-foot\n2. Bend at hips and knees to grip the bar\n3. Keep back straight and chest up\n4. Drive through heels to lift the bar\n5. Stand tall, then lower bar with control"
+  },
+  {
+    "name": "Pull-Up",
+    "description": "Upper body pulling exercise targeting back and biceps",
+    "muscleGroup": 2,
+    "difficulty": 2,
+    "instructions": "1. Hang from bar with hands shoulder-width apart\n2. Pull yourself up until chin is above the bar\n3. Lower yourself with control\n4. Keep core engaged throughout\n5. Repeat for desired reps"
+  },
+  {
+    "name": "Overhead Press",
+    "description": "Shoulder pressing movement performed standing",
+    "muscleGroup": 3,
+    "difficulty": 2,
+    "instructions": "1. Stand with barbell at shoulder height\n2. Feet shoulder-width apart, core braced\n3. Press bar overhead until arms are extended\n4. Lower bar back to shoulders with control\n5. Repeat for desired reps"
+  },
+  {
+    "name": "Barbell Row",
+    "description": "Compound back exercise for thickness and strength",
+    "muscleGroup": 2,
+    "difficulty": 2,
+    "instructions": "1. Bend over at hips with barbell hanging\n2. Keep back flat and core engaged\n3. Pull bar to lower chest/upper abdomen\n4. Squeeze shoulder blades together\n5. Lower bar with control"
+  },
+  {
+    "name": "Dumbbell Bicep Curl",
+    "description": "Isolation exercise for biceps",
+    "muscleGroup": 4,
+    "difficulty": 1,
+    "instructions": "1. Stand with dumbbells at sides, palms forward\n2. Keep elbows stationary\n3. Curl weights up to shoulders\n4. Squeeze biceps at the top\n5. Lower with control"
+  },
+  {
+    "name": "Tricep Dips",
+    "description": "Bodyweight exercise for triceps",
+    "muscleGroup": 5,
+    "difficulty": 2,
+    "instructions": "1. Place hands on parallel bars or bench\n2. Lower body by bending elbows\n3. Go down until upper arms are parallel to floor\n4. Push back up to starting position\n5. Keep elbows close to body"
+  },
+  {
+    "name": "Leg Press",
+    "description": "Machine-based leg exercise",
+    "muscleGroup": 6,
+    "difficulty": 1,
+    "instructions": "1. Sit in leg press machine\n2. Place feet shoulder-width apart on platform\n3. Release safety and lower weight\n4. Push through heels to extend legs\n5. Don't lock knees at top"
+  },
+  {
+    "name": "Romanian Deadlift",
+    "description": "Posterior chain exercise focusing on hamstrings",
+    "muscleGroup": 6,
+    "difficulty": 2,
+    "instructions": "1. Hold barbell at hip level\n2. Keep legs mostly straight\n3. Hinge at hips, lowering bar along legs\n4. Feel stretch in hamstrings\n5. Return to starting position"
+  },
+  {
+    "name": "Lat Pulldown",
+    "description": "Back width exercise on cable machine",
+    "muscleGroup": 2,
+    "difficulty": 1,
+    "instructions": "1. Sit at lat pulldown machine\n2. Grip bar wider than shoulder-width\n3. Pull bar down to upper chest\n4. Squeeze shoulder blades together\n5. Return with control"
+  },
+  {
+    "name": "Plank",
+    "description": "Core stability exercise",
+    "muscleGroup": 7,
+    "difficulty": 1,
+    "instructions": "1. Get into push-up position on forearms\n2. Keep body in straight line\n3. Engage core and glutes\n4. Hold position for time\n5. Don't let hips sag"
+  },
+  {
+    "name": "Lunges",
+    "description": "Unilateral leg exercise",
+    "muscleGroup": 6,
+    "difficulty": 1,
+    "instructions": "1. Stand with feet hip-width apart\n2. Step forward with one leg\n3. Lower back knee toward floor\n4. Push through front heel to return\n5. Alternate legs"
+  },
+  {
+    "name": "Incline Dumbbell Press",
+    "description": "Upper chest focused pressing movement",
+    "muscleGroup": 1,
+    "difficulty": 2,
+    "instructions": "1. Set bench to 30-45 degree angle\n2. Hold dumbbells at chest level\n3. Press weights up until arms extended\n4. Lower with control to chest\n5. Repeat for desired reps"
+  },
+  {
+    "name": "Cable Fly",
+    "description": "Isolation exercise for chest",
+    "muscleGroup": 1,
+    "difficulty": 1,
+    "instructions": "1. Set cables at chest height\n2. Step forward with slight bend in elbows\n3. Bring hands together in front of chest\n4. Squeeze chest muscles\n5. Return to starting position"
+  },
+  {
+    "name": "Face Pull",
+    "description": "Rear delt and upper back exercise",
+    "muscleGroup": 3,
+    "difficulty": 1,
+    "instructions": "1. Attach rope to cable at face height\n2. Pull rope toward face\n3. Separate hands at end position\n4. Focus on rear delts\n5. Return with control"
+  },
+  {
+    "name": "Leg Curl",
+    "description": "Hamstring isolation exercise",
+    "muscleGroup": 6,
+    "difficulty": 1,
+    "instructions": "1. Lie face down on leg curl machine\n2. Position ankles under pad\n3. Curl legs up toward glutes\n4. Squeeze hamstrings at top\n5. Lower with control"
+  },
+  {
+    "name": "Calf Raise",
+    "description": "Calf muscle isolation exercise",
+    "muscleGroup": 6,
+    "difficulty": 1,
+    "instructions": "1. Stand with balls of feet on elevated surface\n2. Lower heels below level of toes\n3. Raise up onto toes as high as possible\n4. Hold contraction briefly\n5. Lower with control"
+  },
+  {
+    "name": "Russian Twist",
+    "description": "Rotational core exercise",
+    "muscleGroup": 7,
+    "difficulty": 1,
+    "instructions": "1. Sit on floor with knees bent\n2. Lean back slightly\n3. Lift feet off floor\n4. Rotate torso side to side\n5. Touch floor on each side"
+  },
+  {
+    "name": "Running",
+    "description": "Cardiovascular endurance exercise",
+    "muscleGroup": 9,
+    "difficulty": 1,
+    "instructions": "1. Start with 5-minute warmup walk\n2. Gradually increase pace to run\n3. Maintain steady breathing\n4. Keep good posture\n5. Cool down with 5-minute walk"
+  }
+]

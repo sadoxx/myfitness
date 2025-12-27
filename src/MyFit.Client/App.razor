@@ -1,0 +1,24 @@
+@using MudBlazor
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Not found</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <MudContainer Class="mt-16">
+                <MudText Typo="Typo.h1" Color="Color.Error">404 - Not Found</MudText>
+                <MudText Typo="Typo.body1">Sorry, we couldn't find this page.</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/" Class="mt-4">
+                    Back to Home
+                </MudButton>
+            </MudContainer>
+        </LayoutView>
+    </NotFound>
+</Router>

@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: myfit-postgres
+    environment:
+      POSTGRES_DB: myfit_db
+      POSTGRES_USER: myfit_user
+      POSTGRES_PASSWORD: MyFit@2025!
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - myfit-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myfit_user -d myfit_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ASP.NET Core Web API
+  api:
+    build:
+      context: .
+      dockerfile: src/MyFit.API/Dockerfile
+    container_name: myfit-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=myfit_db;Username=myfit_user;Password=MyFit@2025!
+      - JwtSettings__Secret=MyFitSecretKey12345678901234567890SuperSecureKey
+      - JwtSettings__Issuer=MyFitAPI
+      - JwtSettings__Audience=MyFitClient
+      - JwtSettings__ExpiryMinutes=1440
+    ports:
+      - "7001:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - myfit-network
+    volumes:
+      - ./src/MyFit.Infrastructure/Seeds:/app/Seeds
+
+  # Blazor WebAssembly Client
+  client:
+    build:
+      context: .
+      dockerfile: src/MyFit.Client/Dockerfile
+    container_name: myfit-client
+    ports:
+      - "5001:80"
+    depends_on:
+      - api
+    networks:
+      - myfit-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  myfit-network:
+    driver: bridge

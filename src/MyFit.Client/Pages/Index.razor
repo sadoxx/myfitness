@@ -1,0 +1,279 @@
+@page "/"
+@using MudBlazor
+@using MyFit.Client.Services
+@inject ApiService ApiService
+@inject StateContainer StateContainer
+
+<PageTitle>Dashboard - MyFit</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">
+    <MudIcon Icon="@Icons.Material.Filled.Dashboard" Class="mr-2" />
+    Dashboard
+</MudText>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else if (_dashboardData != null)
+{
+    <MudGrid>
+        <!-- Nutrition Macros Section -->
+        <MudItem xs="12" md="8">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Today's Nutrition</MudText>
+                
+                <MudGrid>
+                    <!-- Protein Donut Chart -->
+                    <MudItem xs="12" sm="4">
+                        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-2">Protein</MudText>
+                        <div style="height: 200px;">
+                            <MudChart ChartType="ChartType.Donut" 
+                                     InputData="@_proteinChartData" 
+                                     InputLabels="@_proteinChartLabels"
+                                     Width="100%" 
+                                     Height="100%">
+                            </MudChart>
+                        </div>
+                        <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-2">
+                            @_dashboardData.Nutrition.TotalProtein.ToString("F1")g / @_dashboardData.Profile.DailyProteinGoal.ToString("F1")g
+                        </MudText>
+                    </MudItem>
+
+                    <!-- Carbs Donut Chart -->
+                    <MudItem xs="12" sm="4">
+                        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-2">Carbs</MudText>
+                        <div style="height: 200px;">
+                            <MudChart ChartType="ChartType.Donut" 
+                                     InputData="@_carbsChartData" 
+                                     InputLabels="@_carbsChartLabels"
+                                     Width="100%" 
+                                     Height="100%">
+                            </MudChart>
+                        </div>
+                        <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-2">
+                            @_dashboardData.Nutrition.TotalCarbs.ToString("F1")g / @_dashboardData.Profile.DailyCarbsGoal.ToString("F1")g
+                        </MudText>
+                    </MudItem>
+
+                    <!-- Fats Donut Chart -->
+                    <MudItem xs="12" sm="4">
+                        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-2">Fats</MudText>
+                        <div style="height: 200px;">
+                            <MudChart ChartType="ChartType.Donut" 
+                                     InputData="@_fatsChartData" 
+                                     InputLabels="@_fatsChartLabels"
+                                     Width="100%" 
+                                     Height="100%">
+                            </MudChart>
+                        </div>
+                        <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-2">
+                            @_dashboardData.Nutrition.TotalFats.ToString("F1")g / @_dashboardData.Profile.DailyFatsGoal.ToString("F1")g
+                        </MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Quick Stats Section -->
+        <MudItem xs="12" md="4">
+            <MudStack Spacing="3">
+                <!-- Calories Remaining Card -->
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <div>
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Calories Remaining</MudText>
+                            <MudText Typo="Typo.h4">@_dashboardData.Nutrition.CaloriesRemaining.ToString("F0")</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @_dashboardData.Nutrition.TotalCalories.ToString("F0") / @_dashboardData.Profile.DailyCalorieGoal.ToString("F0") kcal
+                            </MudText>
+                        </div>
+                        <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Size="Size.Large" Color="Color.Warning" />
+                    </MudStack>
+                </MudPaper>
+
+                <!-- Water Intake Card -->
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <div style="flex: 1;">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Info">Water Intake</MudText>
+                            <MudText Typo="Typo.h4">@(_dashboardData.Water.TotalIntake / 1000).ToString("F1")L</MudText>
+                            <MudProgressLinear Color="Color.Info" 
+                                             Value="@_dashboardData.Water.Percentage" 
+                                             Class="mt-2" />
+                            <MudStack Row="true" Class="mt-2" Spacing="1">
+                                <MudIconButton Icon="@Icons.Material.Filled.Add" 
+                                             Color="Color.Primary" 
+                                             Size="Size.Small"
+                                             OnClick="@(() => AddWater(250))" />
+                                <MudText Typo="Typo.caption">Add 250ml</MudText>
+                            </MudStack>
+                        </div>
+                        <MudIcon Icon="@Icons.Material.Filled.WaterDrop" Size="Size.Large" Color="Color.Info" />
+                    </MudStack>
+                </MudPaper>
+
+                <!-- Sleep Card -->
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <div>
+                            <MudText Typo="Typo.subtitle2" Color="Color.Success">Sleep</MudText>
+                            @if (_dashboardData.Sleep != null)
+                            {
+                                <MudText Typo="Typo.h4">@_dashboardData.Sleep.TotalHours.ToString("F1")h</MudText>
+                                <MudRating ReadOnly="true" SelectedValue="@(_dashboardData.Sleep.QualityRating ?? 0)" MaxValue="5" />
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2">No sleep logged today</MudText>
+                            }
+                        </div>
+                        <MudIcon Icon="@Icons.Material.Filled.Bedtime" Size="Size.Large" Color="Color.Success" />
+                    </MudStack>
+                </MudPaper>
+            </MudStack>
+        </MudItem>
+
+        <!-- Quick Actions -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-3">Quick Actions</MudText>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              StartIcon="@Icons.Material.Filled.Restaurant"
+                              Href="/nutrition">
+                        Log Meal
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Secondary" 
+                              StartIcon="@Icons.Material.Filled.FitnessCenter"
+                              Href="/workouts">
+                        Start Workout
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" 
+                              Color="Color.Tertiary" 
+                              StartIcon="@Icons.Material.Filled.ChatBubble">
+                        AI Assistant
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _isLoading = true;
+    private DashboardData? _dashboardData;
+
+    // Chart data
+    private double[] _proteinChartData = Array.Empty<double>();
+    private string[] _proteinChartLabels = { "Consumed", "Remaining" };
+    private double[] _carbsChartData = Array.Empty<double>();
+    private string[] _carbsChartLabels = { "Consumed", "Remaining" };
+    private double[] _fatsChartData = Array.Empty<double>();
+    private string[] _fatsChartLabels = { "Consumed", "Remaining" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+        StateContainer.OnChange += StateHasChanged;
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            _isLoading = true;
+            _dashboardData = await ApiService.GetAsync<DashboardData>("dashboard/summary");
+
+            if (_dashboardData != null)
+            {
+                // Update chart data
+                _proteinChartData = new double[] 
+                { 
+                    (double)_dashboardData.Nutrition.TotalProtein, 
+                    Math.Max(0, (double)(_dashboardData.Profile.DailyProteinGoal - _dashboardData.Nutrition.TotalProtein))
+                };
+
+                _carbsChartData = new double[] 
+                { 
+                    (double)_dashboardData.Nutrition.TotalCarbs, 
+                    Math.Max(0, (double)(_dashboardData.Profile.DailyCarbsGoal - _dashboardData.Nutrition.TotalCarbs))
+                };
+
+                _fatsChartData = new double[] 
+                { 
+                    (double)_dashboardData.Nutrition.TotalFats, 
+                    Math.Max(0, (double)(_dashboardData.Profile.DailyFatsGoal - _dashboardData.Nutrition.TotalFats))
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task AddWater(int amount)
+    {
+        try
+        {
+            await ApiService.PostAsync<object, object>("nutrition/water", new { Amount = amount });
+            await LoadDashboardData(); // Refresh
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding water: {ex.Message}");
+        }
+    }
+
+    public void Dispose()
+    {
+        StateContainer.OnChange -= StateHasChanged;
+    }
+
+    // DTOs
+    public class DashboardData
+    {
+        public ProfileData Profile { get; set; } = new();
+        public NutritionData Nutrition { get; set; } = new();
+        public WaterData Water { get; set; } = new();
+        public SleepData? Sleep { get; set; }
+    }
+
+    public class ProfileData
+    {
+        public decimal DailyCalorieGoal { get; set; }
+        public decimal DailyProteinGoal { get; set; }
+        public decimal DailyCarbsGoal { get; set; }
+        public decimal DailyFatsGoal { get; set; }
+    }
+
+    public class NutritionData
+    {
+        public decimal TotalCalories { get; set; }
+        public decimal TotalProtein { get; set; }
+        public decimal TotalCarbs { get; set; }
+        public decimal TotalFats { get; set; }
+        public decimal CaloriesRemaining { get; set; }
+    }
+
+    public class WaterData
+    {
+        public decimal TotalIntake { get; set; }
+        public decimal Goal { get; set; }
+        public decimal Percentage { get; set; }
+    }
+
+    public class SleepData
+    {
+        public decimal TotalHours { get; set; }
+        public int? QualityRating { get; set; }
+        public decimal Goal { get; set; }
+    }
+}

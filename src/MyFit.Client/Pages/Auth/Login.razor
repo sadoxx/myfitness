@@ -1,0 +1,114 @@
+@page "/auth/login"
+@using MudBlazor
+@using MyFit.Client.Services
+@inject ApiService ApiService
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Elevation="4" Class="pa-8">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">Welcome to MyFit</MudText>
+        <MudText Typo="Typo.subtitle1" Align="Align.Center" Color="Color.Secondary" Class="mb-6">
+            Sign in to track your fitness journey
+        </MudText>
+
+        <EditForm Model="@_loginModel" OnValidSubmit="HandleLogin">
+            <MudTextField @bind-Value="_loginModel.Email" 
+                         Label="Email" 
+                         Variant="Variant.Outlined"
+                         InputType="InputType.Email"
+                         Required="true"
+                         Class="mb-4" />
+
+            <MudTextField @bind-Value="_loginModel.Password" 
+                         Label="Password" 
+                         Variant="Variant.Outlined"
+                         InputType="InputType.Password"
+                         Required="true"
+                         Class="mb-4" />
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+            }
+
+            <MudButton ButtonType="ButtonType.Submit" 
+                      Variant="Variant.Filled" 
+                      Color="Color.Primary" 
+                      FullWidth="true"
+                      Disabled="@_isLoading"
+                      Class="mb-3">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                    <span>Signing In...</span>
+                }
+                else
+                {
+                    <span>Sign In</span>
+                }
+            </MudButton>
+
+            <MudDivider Class="my-4" />
+
+            <MudText Align="Align.Center">
+                Don't have an account? 
+                <MudLink Href="/auth/register" Color="Color.Primary">Sign Up</MudLink>
+            </MudText>
+        </EditForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private LoginModel _loginModel = new();
+    private string? _errorMessage;
+    private bool _isLoading;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            _isLoading = true;
+            _errorMessage = null;
+
+            var response = await ApiService.PostAsync<LoginModel, LoginResponse>(
+                "auth/login", 
+                _loginModel);
+
+            if (response != null)
+            {
+                await ApiService.SetAuthToken(response.Token);
+                
+                if (response.IsOnboardingComplete)
+                {
+                    Navigation.NavigateTo("/");
+                }
+                else
+                {
+                    Navigation.NavigateTo("/auth/onboarding");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Invalid email or password";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private class LoginModel
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+
+    private class LoginResponse
+    {
+        public Guid UserId { get; set; }
+        public string Email { get; set; } = "";
+        public string Token { get; set; } = "";
+        public bool IsOnboardingComplete { get; set; }
+    }
+}
