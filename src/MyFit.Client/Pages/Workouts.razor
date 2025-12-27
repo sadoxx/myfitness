@@ -1,0 +1,154 @@
+@page "/workouts"
+@using MudBlazor
+@using MyFit.Client.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+
+<PageTitle>Workouts - MyFit</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">Exercises Library</MudText>
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudText Typo="Typo.h6" GutterBottom="true">Available Exercises</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                Browse all exercises in the database. Workout plan builder coming soon!
+            </MudText>
+
+            @if (_isLoading)
+            {
+                <MudProgressLinear Indeterminate="true" />
+            }
+            else if (_exercises.Any())
+            {
+                <MudGrid>
+                    @foreach (var exercise in _exercises)
+                    {
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudCard>
+                                <MudCardContent>
+                                    <MudText Typo="Typo.h6">@exercise.Name</MudText>
+                                    <MudChip Size="Size.Small" Color="GetMuscleGroupColor(exercise.MuscleGroup)">
+                                        @GetMuscleGroupName(exercise.MuscleGroup)
+                                    </MudChip>
+                                    <MudChip Size="Size.Small" Color="GetDifficultyColor(exercise.Difficulty)">
+                                        @GetDifficultyName(exercise.Difficulty)
+                                    </MudChip>
+                                    <MudText Typo="Typo.body2" Class="mt-2">@exercise.Description</MudText>
+                                </MudCardContent>
+                                <MudCardActions>
+                                    <MudButton Size="Size.Small" 
+                                               Variant="Variant.Text" 
+                                               Color="Color.Primary"
+                                               OnClick="@(() => ShowExerciseDetails(exercise))">
+                                        View Details
+                                    </MudButton>
+                                </MudCardActions>
+                            </MudCard>
+                        </MudItem>
+                    }
+                </MudGrid>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">No exercises found. Make sure the database is seeded.</MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private bool _isLoading = true;
+    private List<Exercise> _exercises = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadExercises();
+    }
+
+    private async Task LoadExercises()
+    {
+        try
+        {
+            _isLoading = true;
+            var result = await ApiService.GetAsync<List<Exercise>>("workouts/exercises");
+            _exercises = result ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading exercises: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ShowExerciseDetails(Exercise exercise)
+    {
+        Snackbar.Add($"Instructions: {exercise.Instructions}", Severity.Info);
+    }
+
+    private Color GetMuscleGroupColor(int muscleGroup)
+    {
+        return muscleGroup switch
+        {
+            0 => Color.Primary,   // Chest
+            1 => Color.Secondary, // Back
+            2 => Color.Tertiary,  // Legs
+            3 => Color.Info,      // Shoulders
+            4 => Color.Success,   // Arms
+            5 => Color.Warning,   // Core
+            _ => Color.Default
+        };
+    }
+
+    private string GetMuscleGroupName(int muscleGroup)
+    {
+        return muscleGroup switch
+        {
+            0 => "Chest",
+            1 => "Back",
+            2 => "Legs",
+            3 => "Shoulders",
+            4 => "Arms",
+            5 => "Core",
+            6 => "Full Body",
+            7 => "Cardio",
+            _ => "Unknown"
+        };
+    }
+
+    private Color GetDifficultyColor(int difficulty)
+    {
+        return difficulty switch
+        {
+            0 => Color.Success,  // Beginner
+            1 => Color.Warning,  // Intermediate
+            2 => Color.Error,    // Advanced
+            _ => Color.Default
+        };
+    }
+
+    private string GetDifficultyName(int difficulty)
+    {
+        return difficulty switch
+        {
+            0 => "Beginner",
+            1 => "Intermediate",
+            2 => "Advanced",
+            _ => "Unknown"
+        };
+    }
+
+    public class Exercise
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public int MuscleGroup { get; set; }
+        public int Difficulty { get; set; }
+        public string Instructions { get; set; } = "";
+    }
+}

@@ -30,6 +30,7 @@ public class WorkoutsController : ControllerBase
         return Guid.Parse(userIdClaim!);
     }
 
+    [AllowAnonymous]
     [HttpGet("exercises")]
     public async Task<IActionResult> GetAllExercises([FromQuery] int? muscleGroup, [FromQuery] int? difficulty)
     {

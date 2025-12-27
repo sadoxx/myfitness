@@ -34,6 +34,7 @@ public class NutritionController : ControllerBase
         return Guid.Parse(userIdClaim!);
     }
 
+    [AllowAnonymous]
     [HttpGet("search")]
     public async Task<IActionResult> SearchFoodItems([FromQuery] string query, [FromQuery] int maxResults = 20)
     {
@@ -62,7 +63,7 @@ public class NutritionController : ControllerBase
         {
             UserId = GetCurrentUserId(),
             FoodItemId = localFoodItemId,
-            MealType = request.MealType,
+            MealType = (MyFit.Domain.Enums.MealType)request.MealType,
             Quantity = request.Quantity,
             QuantityUnit = request.QuantityUnit,
             LogDate = request.LogDate ?? DateTime.UtcNow,

@@ -1,0 +1,29 @@
+@page "/logout"
+@using MyFit.Client.Services
+@inject ApiService ApiService
+@inject NavigationManager Navigation
+
+<PageTitle>Logout - MyFit</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Elevation="3" Class="pa-8 text-center">
+        <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Large" Color="Color.Primary" Class="mb-4" />
+        <MudText Typo="Typo.h5" GutterBottom="true">You've been logged out</MudText>
+        <MudText Typo="Typo.body1" Class="mb-6">
+            Thank you for using MyFit!
+        </MudText>
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   Href="/"
+                   FullWidth="true">
+            Back to Home
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await ApiService.RemoveAuthToken();
+    }
+}

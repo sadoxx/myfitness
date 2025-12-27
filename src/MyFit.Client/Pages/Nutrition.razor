@@ -1,0 +1,241 @@
+@page "/nutrition"
+@using MudBlazor
+@using MyFit.Client.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Nutrition - MyFit</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">Nutrition Tracker</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="8">
+        <MudPaper Elevation="2" Class="pa-6 mb-4">
+            <MudText Typo="Typo.h6" GutterBottom="true">Search & Log Food</MudText>
+            
+            <MudGrid>
+                <MudItem xs="12" md="8">
+                    <MudTextField @bind-Value="_searchQuery" 
+                                  Label="Search food (e.g., banana, chicken breast)" 
+                                  Variant="Variant.Outlined"
+                                  OnKeyUp="HandleKeyPress"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.Search" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               FullWidth="true"
+                               Size="Size.Large"
+                               OnClick="SearchFood"
+                               Disabled="_isSearching">
+                        @if (_isSearching)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        }
+                        else
+                        {
+                            <text>Search</text>
+                        }
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            @if (_searchResults.Any())
+            {
+                <MudText Typo="Typo.subtitle1" Class="mt-6 mb-3">Search Results</MudText>
+                <MudList>
+                    @foreach (var food in _searchResults)
+                    {
+                        <MudListItem>
+                            <MudGrid>
+                                <MudItem xs="8">
+                                    <MudText Typo="Typo.body1">@food.Name</MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @food.Calories cal | P: @food.Protein.ToString("F1")g | C: @food.Carbs.ToString("F1")g | F: @food.Fats.ToString("F1")g
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="4" Class="d-flex justify-end align-center">
+                                    <MudButton Size="Size.Small" 
+                                               Variant="Variant.Filled" 
+                                               Color="Color.Primary"
+                                               OnClick="@(() => ShowLogDialog(food))">
+                                        Log Meal
+                                    </MudButton>
+                                </MudItem>
+                            </MudGrid>
+                        </MudListItem>
+                        <MudDivider />
+                    }
+                </MudList>
+            }
+            else if (_hasSearched && !_isSearching)
+            {
+                <MudAlert Severity="Severity.Info" Class="mt-4">
+                    No results found. Try searching for common foods like "apple", "chicken", "rice", or "milk".
+                </MudAlert>
+            }
+        </MudPaper>
+
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudText Typo="Typo.h6" GutterBottom="true">Quick Actions</MudText>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Outlined" 
+                           StartIcon="@Icons.Material.Filled.WaterDrop"
+                           OnClick="@(() => LogWater(250))">
+                    +250ml Water
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" 
+                           StartIcon="@Icons.Material.Filled.WaterDrop"
+                           OnClick="@(() => LogWater(500))">
+                    +500ml Water
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" md="4">
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudText Typo="Typo.h6" GutterBottom="true">Today's Summary</MudText>
+            @if (_todaySummary != null)
+            {
+                <MudStack Spacing="3" Class="mt-4">
+                    <div>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Calories</MudText>
+                        <MudText Typo="Typo.h6">@_todaySummary.TotalCalories.ToString("F0") kcal</MudText>
+                    </div>
+                    <MudDivider />
+                    <div>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Protein</MudText>
+                        <MudText Typo="Typo.body1">@_todaySummary.TotalProtein.ToString("F1")g</MudText>
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Carbs</MudText>
+                        <MudText Typo="Typo.body1">@_todaySummary.TotalCarbs.ToString("F1")g</MudText>
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Fats</MudText>
+                        <MudText Typo="Typo.body1">@_todaySummary.TotalFats.ToString("F1")g</MudText>
+                    </div>
+                </MudStack>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Class="mt-4">No meals logged today. Start tracking!</MudText>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private string _searchQuery = "";
+    private bool _isSearching = false;
+    private bool _hasSearched = false;
+    private List<FoodItem> _searchResults = new();
+    private NutritionSummary? _todaySummary;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTodaySummary();
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchFood();
+        }
+    }
+
+    private async Task SearchFood()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            Snackbar.Add("Please enter a search term", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            _isSearching = true;
+            _hasSearched = true;
+            var results = await ApiService.GetAsync<List<FoodItem>>($"nutrition/search?query={Uri.EscapeDataString(_searchQuery)}");
+            _searchResults = results ?? new List<FoodItem>();
+            
+            if (!_searchResults.Any())
+            {
+                Snackbar.Add("No foods found. Try another search term.", Severity.Info);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error searching: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSearching = false;
+        }
+    }
+
+    private async Task ShowLogDialog(FoodItem food)
+    {
+        var parameters = new DialogParameters<LogMealDialog>
+        {
+            { x => x.FoodItem, food }
+        };
+
+        var dialog = await DialogService.ShowAsync<LogMealDialog>("Log Meal", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadTodaySummary();
+            Snackbar.Add("Meal logged successfully!", Severity.Success);
+        }
+    }
+
+    private async Task LogWater(int amount)
+    {
+        try
+        {
+            await ApiService.PostAsync<object, object>("nutrition/water", new { Amount = amount });
+            Snackbar.Add($"Added {amount}ml of water!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error logging water: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadTodaySummary()
+    {
+        try
+        {
+            _todaySummary = await ApiService.GetAsync<NutritionSummary>("nutrition/summary");
+        }
+        catch
+        {
+            // Silent fail - user might not be logged in
+        }
+    }
+
+    public class FoodItem
+    {
+        public string Name { get; set; } = "";
+        public decimal Calories { get; set; }
+        public decimal Protein { get; set; }
+        public decimal Carbs { get; set; }
+        public decimal Fats { get; set; }
+        public string? ExternalId { get; set; }
+        public string? ExternalSource { get; set; }
+    }
+
+    public class NutritionSummary
+    {
+        public decimal TotalCalories { get; set; }
+        public decimal TotalProtein { get; set; }
+        public decimal TotalCarbs { get; set; }
+        public decimal TotalFats { get; set; }
+    }
+}

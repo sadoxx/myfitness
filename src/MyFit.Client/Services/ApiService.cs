@@ -1,4 +1,4 @@
-@using System.Net.Http.Headers
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -62,6 +62,51 @@ public class ApiService
         throw new Exception($"API Error: {error}");
     }
 
+    public async Task<AuthResponse> LoginAsync(string email, string password)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("/api/auth/login", new { Email = email, Password = password });
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<AuthResult>();
+                if (result?.Token != null)
+                {
+                    await SetAuthToken(result.Token);
+                    return new AuthResponse { IsSuccess = true };
+                }
+            }
+            
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            return new AuthResponse { IsSuccess = false, Message = errorMessage };
+        }
+        catch (Exception ex)
+        {
+            return new AuthResponse { IsSuccess = false, Message = ex.Message };
+        }
+    }
+
+    public async Task<AuthResponse> RegisterAsync(string email, string password)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("/api/auth/register", new { Email = email, Password = password });
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return new AuthResponse { IsSuccess = true };
+            }
+            
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            return new AuthResponse { IsSuccess = false, Message = errorMessage };
+        }
+        catch (Exception ex)
+        {
+            return new AuthResponse { IsSuccess = false, Message = ex.Message };
+        }
+    }
+
     private async Task EnsureAuthHeader()
     {
         if (_httpClient.DefaultRequestHeaders.Authorization == null)
@@ -74,4 +119,15 @@ public class ApiService
             }
         }
     }
+}
+
+public class AuthResponse
+{
+    public bool IsSuccess { get; set; }
+    public string? Message { get; set; }
+}
+
+public class AuthResult
+{
+    public string? Token { get; set; }
 }

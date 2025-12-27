@@ -15,6 +15,63 @@
 {
     <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
 }
+else if (_dashboardData == null)
+{
+    <!-- Welcome message for non-authenticated users -->
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-16">
+        <MudPaper Elevation="3" Class="pa-8 text-center">
+            <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" Size="Size.Large" Color="Color.Primary" Class="mb-4" />
+            <MudText Typo="Typo.h3" GutterBottom="true">Welcome to MyFit</MudText>
+            <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mb-6">
+                Your comprehensive fitness and nutrition tracking companion
+            </MudText>
+            <MudStack Row="true" Justify="Justify.Center" Spacing="3" Class="mt-6">
+                <MudButton Variant="Variant.Filled" 
+                          Color="Color.Primary" 
+                          Size="Size.Large"
+                          Href="/register">
+                    Get Started
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" 
+                          Color="Color.Primary" 
+                          Size="Size.Large"
+                          Href="/login">
+                    Log In
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+        
+        <MudGrid Class="mt-8">
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="2" Class="pa-6 text-center" Style="height: 100%;">
+                    <MudIcon Icon="@Icons.Material.Filled.Restaurant" Size="Size.Large" Color="Color.Primary" Class="mb-2" />
+                    <MudText Typo="Typo.h6" GutterBottom="true">Track Nutrition</MudText>
+                    <MudText Typo="Typo.body2">
+                        Log meals, monitor macros, and hit your daily nutrition goals
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="2" Class="pa-6 text-center" Style="height: 100%;">
+                    <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                    <MudText Typo="Typo.h6" GutterBottom="true">Custom Workouts</MudText>
+                    <MudText Typo="Typo.body2">
+                        Create personalized workout plans and track your progress
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="2" Class="pa-6 text-center" Style="height: 100%;">
+                    <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Size="Size.Large" Color="Color.Tertiary" Class="mb-2" />
+                    <MudText Typo="Typo.h6" GutterBottom="true">Monitor Progress</MudText>
+                    <MudText Typo="Typo.body2">
+                        Visualize your fitness journey with detailed analytics
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudContainer>
+}
 else if (_dashboardData != null)
 {
     <MudGrid>
@@ -99,7 +156,7 @@ else if (_dashboardData != null)
                             <MudText Typo="Typo.subtitle2" Color="Color.Info">Water Intake</MudText>
                             <MudText Typo="Typo.h4">@(_dashboardData.Water.TotalIntake / 1000).ToString("F1")L</MudText>
                             <MudProgressLinear Color="Color.Info" 
-                                             Value="@_dashboardData.Water.Percentage" 
+                                             Value="@((double)_dashboardData.Water.Percentage)" 
                                              Class="mt-2" />
                             <MudStack Row="true" Class="mt-2" Spacing="1">
                                 <MudIconButton Icon="@Icons.Material.Filled.Add" 

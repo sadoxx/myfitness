@@ -47,7 +47,11 @@ public class DbInitializer
             }
 
             var jsonString = await File.ReadAllTextAsync(jsonPath);
-            var exerciseDtos = JsonSerializer.Deserialize<List<ExerciseSeedDto>>(jsonString);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            var exerciseDtos = JsonSerializer.Deserialize<List<ExerciseSeedDto>>(jsonString, options);
 
             if (exerciseDtos == null || !exerciseDtos.Any())
             {

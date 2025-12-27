@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MyFit.Application.Common.Interfaces;
+using MyFit.Domain.Common;
 using MyFit.Domain.Entities;
 
 namespace MyFit.Infrastructure.Data;
@@ -15,7 +16,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     {
     }
 
-    public DbSet<ApplicationUser> Users => Set<ApplicationUser>();
+    public new DbSet<ApplicationUser> Users => Set<ApplicationUser>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Exercise> Exercises => Set<Exercise>();
     public DbSet<WorkoutPlan> WorkoutPlans => Set<WorkoutPlan>();

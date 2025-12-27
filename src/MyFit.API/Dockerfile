@@ -27,10 +27,6 @@ RUN dotnet publish "MyFit.API.csproj" -c Release -o /app/publish /p:UseAppHost=f
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
-# Install Entity Framework Core tools for migrations
-RUN dotnet tool install --global dotnet-ef --version 8.0.0
-ENV PATH="${PATH}:/root/.dotnet/tools"
-
 COPY --from=publish /app/publish .
 
 # Copy the seed data

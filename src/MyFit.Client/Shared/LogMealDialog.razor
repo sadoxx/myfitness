@@ -1,0 +1,60 @@
+@using MudBlazor
+@using MyFit.Client.Services
+@inject ApiService ApiService
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="_servingSize" 
+                      Label="Serving Size (grams)" 
+                      Variant="Variant.Outlined"
+                      InputType="InputType.Number"
+                      Class="mb-4" />
+        
+        <MudSelect @bind-Value="_mealType" Label="Meal Type" Variant="Variant.Outlined">
+            <MudSelectItem Value="0">Breakfast</MudSelectItem>
+            <MudSelectItem Value="1">Lunch</MudSelectItem>
+            <MudSelectItem Value="2">Dinner</MudSelectItem>
+            <MudSelectItem Value="3">Snack</MudSelectItem>
+        </MudSelect>
+
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">
+            Logging: @FoodItem?.Name
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Log Meal</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    
+    [Parameter] public MyFit.Client.Pages.Nutrition.FoodItem? FoodItem { get; set; }
+
+    private decimal _servingSize = 100;
+    private int _mealType = 0;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        try
+        {
+            await ApiService.PostAsync<object, object>("nutrition/meal-log", new
+            {
+                ExternalFoodId = FoodItem?.ExternalId,
+                ExternalSource = FoodItem?.ExternalSource ?? "openfoodfacts",
+                ServingSize = _servingSize,
+                MealType = _mealType
+            });
+            
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+            MudDialog.Cancel();
+        }
+    }
+}
