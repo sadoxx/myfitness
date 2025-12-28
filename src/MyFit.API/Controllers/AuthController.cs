@@ -1,6 +1,8 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MyFit.Application.Auth.Commands;
 using MyFit.Application.Common.Interfaces;
 using MyFit.Domain.Entities;
@@ -54,7 +56,7 @@ public class AuthController : ControllerBase
         // Create empty UserProfile
         var userProfile = new UserProfile
         {
-            Id = Guid.NewGuid(),
+            Id = user.Id,  // Use the same ID as the ApplicationUser
             UserId = user.Id,
             IsOnboardingComplete = false
         };
@@ -108,9 +110,11 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("onboarding")]
+    [Authorize]
     public async Task<IActionResult> CompleteOnboarding([FromBody] CompleteOnboardingCommand command)
     {
-        var userProfile = await _context.UserProfiles.FindAsync(command.UserId);
+        var userId = GetCurrentUserId();
+        var userProfile = await _context.UserProfiles.FirstOrDefaultAsync(up => up.UserId == userId);
 
         if (userProfile == null)
         {
@@ -203,4 +207,40 @@ public class AuthController : ControllerBase
             DailyFatsGoal = userProfile.DailyFatsGoal
         });
     }
-}
+
+    [HttpGet("profile")]
+    [Authorize]
+    public async Task<IActionResult> GetProfile()
+    {
+        var userId = GetCurrentUserId();
+        var userProfile = await _context.UserProfiles.FirstOrDefaultAsync(up => up.UserId == userId);
+
+        if (userProfile == null)
+        {
+            return NotFound(new { Message = "User profile not found" });
+        }
+
+        return Ok(new
+        {
+            userProfile.UserId,
+            Gender = (int)userProfile.Gender,
+            userProfile.Age,
+            userProfile.CurrentWeight,
+            userProfile.Height,
+            PrimaryGoal = (int)userProfile.PrimaryGoal,
+            ActivityLevel = (int)userProfile.ActivityLevel,
+            userProfile.BMR,
+            userProfile.TDEE,
+            userProfile.DailyCalorieGoal,
+            userProfile.DailyProteinGoal,
+            userProfile.DailyCarbsGoal,
+            userProfile.DailyFatsGoal,
+            userProfile.IsOnboardingComplete
+        });
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        return Guid.Parse(userIdClaim!);
+    }}

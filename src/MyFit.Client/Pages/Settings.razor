@@ -1,20 +1,247 @@
 @page "/settings"
 @using MudBlazor
+@using MyFit.Client.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
 
 <PageTitle>Settings - MyFit</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-6">Settings</MudText>
+<MudText Typo="Typo.h4" Class="mb-6">
+    <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" />
+    Settings
+</MudText>
 
-<MudGrid>
-    <MudItem xs="12">
-        <MudPaper Elevation="2" Class="pa-6">
-            <MudText Typo="Typo.h6" GutterBottom="true">Profile Settings</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                Update your personal information and preferences.
-            </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Info">
-                🚧 Settings page coming soon!
-            </MudText>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+@if (_isLoading)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        <!-- Personal Information -->
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-6" Style="overflow: visible;">
+                <MudText Typo="Typo.h6" Class="mb-4">Personal Information</MudText>
+                
+                <MudSelect T="int" @bind-Value="_gender" Label="Gender" Variant="Variant.Text" Class="mb-4"
+                          FullWidth="true" OffsetY="true" LockScroll="false"
+                          Style="border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 8px; padding: 8px; background: transparent !important;">
+                    <MudSelectItem T="int" Value="0">Male</MudSelectItem>
+                    <MudSelectItem T="int" Value="1">Female</MudSelectItem>
+                </MudSelect>
+
+                <MudNumericField @bind-Value="_age" 
+                                Label="Age" 
+                                Variant="Variant.Text" 
+                                Min="10" 
+                                Max="120"
+                                Class="mb-4"
+                                Style="border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 8px; padding: 8px; background: transparent !important;" />
+
+                <MudNumericField @bind-Value="_weight" 
+                                Label="Current Weight (kg)" 
+                                Variant="Variant.Text" 
+                                Min="30" 
+                                Max="300"
+                                Step="0.1M"
+                                Class="mb-4"
+                                Style="border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 8px; padding: 8px; background: transparent !important;" />
+
+                <MudNumericField @bind-Value="_height" 
+                                Label="Height (cm)" 
+                                Variant="Variant.Text" 
+                                Min="100" 
+                                Max="250"
+                                Step="0.1M"
+                                Class="mb-4"
+                                Style="border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 8px; padding: 8px; background: transparent !important;" />
+            </MudPaper>
+        </MudItem>
+
+        <!-- Fitness Goals -->
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-6" Style="overflow: visible;">
+                <MudText Typo="Typo.h6" Class="mb-4">Fitness Goals</MudText>
+                
+                <MudSelect T="int" @bind-Value="_goal" Label="Primary Goal" Variant="Variant.Text" Class="mb-4"
+                          FullWidth="true" OffsetY="true" LockScroll="false"
+                          Style="border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 8px; padding: 8px; background: transparent !important;">
+                    <MudSelectItem T="int" Value="0">🔥 Weight Loss</MudSelectItem>
+                    <MudSelectItem T="int" Value="1">💪 Muscle Gain</MudSelectItem>
+                    <MudSelectItem T="int" Value="2">⚖️ Maintenance</MudSelectItem>
+                </MudSelect>
+
+                <MudSelect T="int" @bind-Value="_activityLevel" Label="Activity Level" Variant="Variant.Text" Class="mb-4"
+                          FullWidth="true" OffsetY="true" LockScroll="false"
+                          Style="border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 8px; padding: 8px; background: transparent !important;">
+                    <MudSelectItem T="int" Value="0">
+                        <MudText><strong>Sedentary</strong> - Little to no exercise</MudText>
+                    </MudSelectItem>
+                    <MudSelectItem T="int" Value="1">
+                        <MudText><strong>Lightly Active</strong> - Exercise 1-3 days/week</MudText>
+                    </MudSelectItem>
+                    <MudSelectItem T="int" Value="2">
+                        <MudText><strong>Moderately Active</strong> - Exercise 3-5 days/week</MudText>
+                    </MudSelectItem>
+                    <MudSelectItem T="int" Value="3">
+                        <MudText><strong>Very Active</strong> - Exercise 6-7 days/week</MudText>
+                    </MudSelectItem>
+                    <MudSelectItem T="int" Value="4">
+                        <MudText><strong>Extra Active</strong> - Very intense exercise daily</MudText>
+                    </MudSelectItem>
+                </MudSelect>
+
+                <MudAlert Severity="Severity.Info" Class="mb-4">
+                    Your daily calorie and macro goals will be automatically calculated based on these settings.
+                </MudAlert>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Calculated Goals (Read-only) -->
+        @if (_profile != null && _profile.IsOnboardingComplete)
+        {
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-6">
+                    <MudText Typo="Typo.h6" Class="mb-4">Your Daily Goals</MudText>
+                    <MudGrid>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Calories</MudText>
+                            <MudText Typo="Typo.h5" Color="Color.Warning">@_profile.DailyCalorieGoal.ToString("F0") kcal</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Protein</MudText>
+                            <MudText Typo="Typo.h5" Color="Color.Primary">@_profile.DailyProteinGoal.ToString("F0")g</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Carbs</MudText>
+                            <MudText Typo="Typo.h5" Color="Color.Secondary">@_profile.DailyCarbsGoal.ToString("F0")g</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Fats</MudText>
+                            <MudText Typo="Typo.h5" Color="Color.Tertiary">@_profile.DailyFatsGoal.ToString("F0")g</MudText>
+                        </MudItem>
+                    </MudGrid>
+                    <MudDivider Class="my-4" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        <strong>BMR:</strong> @_profile.BMR.ToString("F0") kcal/day • 
+                        <strong>TDEE:</strong> @_profile.TDEE.ToString("F0") kcal/day
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+        }
+
+        <!-- Save Button -->
+        <MudItem xs="12">
+            <MudButton Variant="Variant.Filled" 
+                      Color="Color.Primary" 
+                      Size="Size.Large"
+                      FullWidth="true"
+                      OnClick="SaveSettings"
+                      Disabled="_isSaving">
+                @if (_isSaving)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                    <MudText Class="ms-2">Saving...</MudText>
+                }
+                else
+                {
+                    <MudText>Save Changes</MudText>
+                }
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _isLoading = true;
+    private bool _isSaving = false;
+    private ProfileData? _profile;
+
+    private int _gender = 0;
+    private int _age = 25;
+    private decimal _weight = 70;
+    private decimal _height = 170;
+    private int _goal = 2;
+    private int _activityLevel = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfile();
+    }
+
+    private async Task LoadProfile()
+    {
+        try
+        {
+            _isLoading = true;
+            _profile = await ApiService.GetAsync<ProfileData>("auth/profile");
+            
+            if (_profile != null)
+            {
+                _gender = (int)_profile.Gender;
+                _age = _profile.Age;
+                _weight = _profile.CurrentWeight;
+                _height = _profile.Height;
+                _goal = (int)_profile.PrimaryGoal;
+                _activityLevel = (int)_profile.ActivityLevel;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading profile: {ex.Message}");
+            Snackbar.Add("Could not load profile", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        try
+        {
+            _isSaving = true;
+            
+            await ApiService.PostAsync<object, object>("auth/onboarding", new
+            {
+                Gender = _gender,
+                Age = _age,
+                CurrentWeight = _weight,
+                Height = _height,
+                PrimaryGoal = _goal,
+                ActivityLevel = _activityLevel
+            });
+
+            Snackbar.Add("Settings saved successfully!", Severity.Success);
+            await LoadProfile(); // Reload to show updated calculations
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving settings: {ex.Message}");
+            Snackbar.Add($"Error saving settings: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    public class ProfileData
+    {
+        public Guid UserId { get; set; }
+        public int Gender { get; set; }
+        public int Age { get; set; }
+        public decimal CurrentWeight { get; set; }
+        public decimal Height { get; set; }
+        public int PrimaryGoal { get; set; }
+        public int ActivityLevel { get; set; }
+        public decimal BMR { get; set; }
+        public decimal TDEE { get; set; }
+        public decimal DailyCalorieGoal { get; set; }
+        public decimal DailyProteinGoal { get; set; }
+        public decimal DailyCarbsGoal { get; set; }
+        public decimal DailyFatsGoal { get; set; }
+        public bool IsOnboardingComplete { get; set; }
+    }
+}

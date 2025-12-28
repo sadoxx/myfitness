@@ -6,72 +6,267 @@
 
 <PageTitle>Workouts - MyFit</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-6">Exercises Library</MudText>
+<MudText Typo="Typo.h4" Class="mb-6">
+    <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" Class="mr-2" />
+    Workout Tracker
+</MudText>
 
-<MudGrid>
-    <MudItem xs="12">
-        <MudPaper Elevation="2" Class="pa-6">
-            <MudText Typo="Typo.h6" GutterBottom="true">Available Exercises</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                Browse all exercises in the database. Workout plan builder coming soon!
-            </MudText>
+<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+    <MudTabPanel Text="Active Workout" Icon="@Icons.Material.Filled.PlayArrow">
+        @if (_activeWorkout == null)
+        {
+            <MudButton Variant="Variant.Filled" 
+                      Color="Color.Primary" 
+                      Size="Size.Large"
+                      StartIcon="@Icons.Material.Filled.Add"
+                      OnClick="StartWorkout">
+                Start New Workout
+            </MudButton>
+        }
+        else
+        {
+            <MudPaper Elevation="0" Class="mb-4">
+                <MudText Typo="Typo.h5" Class="mb-2">@_activeWorkout.WorkoutName</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Started: @_activeWorkout.WorkoutDate.ToString("h:mm tt")
+                </MudText>
+            </MudPaper>
 
-            @if (_isLoading)
+            @foreach (var exerciseLog in _activeWorkout.ExerciseLogs.OrderBy(e => e.OrderIndex))
             {
-                <MudProgressLinear Indeterminate="true" />
+                <MudCard Class="mb-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@exerciseLog.ExerciseName</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                          Color="Color.Error" 
+                                          OnClick="@(() => RemoveExercise(exerciseLog))" />
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        @foreach (var set in exerciseLog.Sets)
+                        {
+                            <MudGrid Class="mb-2">
+                                <MudItem xs="2">
+                                    <MudText Typo="Typo.body1">Set @set.SetNumber</MudText>
+                                </MudItem>
+                                <MudItem xs="4">
+                                    <MudNumericField @bind-Value="set.Weight" 
+                                                    Label="Weight (kg)" 
+                                                    Variant="Variant.Outlined"
+                                                    Dense="true"
+                                                    Step="2.5M" />
+                                </MudItem>
+                                <MudItem xs="4">
+                                    <MudNumericField @bind-Value="set.Reps" 
+                                                    Label="Reps" 
+                                                    Variant="Variant.Outlined"
+                                                    Dense="true"
+                                                    Min="0" />
+                                </MudItem>
+                                <MudItem xs="2">
+                                    <MudCheckBox @bind-Value="set.Completed" Color="Color.Success" />
+                                </MudItem>
+                            </MudGrid>
+                        }
+                        <MudButton Size="Size.Small" 
+                                  Variant="Variant.Text" 
+                                  Color="Color.Primary"
+                                  StartIcon="@Icons.Material.Filled.Add"
+                                  OnClick="@(() => AddSet(exerciseLog))"
+                                  Class="mt-2">
+                            Add Set
+                        </MudButton>
+                    </MudCardContent>
+                </MudCard>
             }
-            else if (_exercises.Any())
-            {
-                <MudGrid>
-                    @foreach (var exercise in _exercises)
-                    {
-                        <MudItem xs="12" md="6" lg="4">
-                            <MudCard>
-                                <MudCardContent>
-                                    <MudText Typo="Typo.h6">@exercise.Name</MudText>
+
+            <MudButton Variant="Variant.Outlined" 
+                      Color="Color.Primary"
+                      StartIcon="@Icons.Material.Filled.Add"
+                      OnClick="@(async () => await OpenAddExerciseDialog())"
+                      Class="mb-4">
+                Add Exercise
+            </MudButton>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Filled" 
+                          Color="Color.Success"
+                          StartIcon="@Icons.Material.Filled.Check"
+                          OnClick="FinishWorkout">
+                    Finish Workout
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" 
+                          Color="Color.Error"
+                          StartIcon="@Icons.Material.Filled.Cancel"
+                          OnClick="CancelWorkout">
+                    Cancel
+                </MudButton>
+            </MudStack>
+        }
+    </MudTabPanel>
+
+    <MudTabPanel Text="Exercise Library" Icon="@Icons.Material.Filled.List">
+        @if (_isLoadingExercises)
+        {
+            <MudProgressLinear Indeterminate="true" />
+        }
+        else
+        {
+            <MudTextField @bind-Value="_searchQuery" 
+                         Label="Search exercises" 
+                         Variant="Variant.Outlined"
+                         Adornment="Adornment.Start"
+                         AdornmentIcon="@Icons.Material.Filled.Search"
+                         Class="mb-4" />
+
+            <MudGrid>
+                @foreach (var exercise in GetFilteredExercises())
+                {
+                    <MudItem xs="12" md="6" lg="4">
+                        <MudCard>
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6">@exercise.Name</MudText>
+                                <MudStack Row="true" Spacing="1" Class="mt-2">
                                     <MudChip Size="Size.Small" Color="GetMuscleGroupColor(exercise.MuscleGroup)">
                                         @GetMuscleGroupName(exercise.MuscleGroup)
                                     </MudChip>
                                     <MudChip Size="Size.Small" Color="GetDifficultyColor(exercise.Difficulty)">
                                         @GetDifficultyName(exercise.Difficulty)
                                     </MudChip>
-                                    <MudText Typo="Typo.body2" Class="mt-2">@exercise.Description</MudText>
-                                </MudCardContent>
-                                <MudCardActions>
-                                    <MudButton Size="Size.Small" 
-                                               Variant="Variant.Text" 
-                                               Color="Color.Primary"
-                                               OnClick="@(() => ShowExerciseDetails(exercise))">
-                                        View Details
-                                    </MudButton>
-                                </MudCardActions>
-                            </MudCard>
-                        </MudItem>
-                    }
-                </MudGrid>
-            }
-            else
+                                </MudStack>
+                                <MudText Typo="Typo.body2" Class="mt-2">@exercise.Description</MudText>
+                            </MudCardContent>
+                            <MudCardActions>
+                                <MudButton Size="Size.Small" 
+                                          Variant="Variant.Text" 
+                                          Color="Color.Primary"
+                                          OnClick="@(() => ShowExerciseDetails(exercise))">
+                                    View Details
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+    </MudTabPanel>
+
+    <MudTabPanel Text="Workout History" Icon="@Icons.Material.Filled.History">
+        @if (_isLoadingHistory)
+        {
+            <MudProgressLinear Indeterminate="true" />
+        }
+        else if (_workoutHistory.Any())
+        {
+            @foreach (var workout in _workoutHistory)
             {
-                <MudAlert Severity="Severity.Info">No exercises found. Make sure the database is seeded.</MudAlert>
+                <MudCard Class="mb-3">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@workout.WorkoutName</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @workout.WorkoutDate.ToString("MMM dd, yyyy • h:mm tt") • @workout.DurationMinutes min
+                            </MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Exercises:</MudText>
+                        @foreach (var exercise in workout.ExerciseLogs)
+                        {
+                            <MudText Typo="Typo.body2">
+                                • @exercise.ExerciseName: @exercise.Sets.Count sets
+                            </MudText>
+                        }
+                    </MudCardContent>
+                </MudCard>
             }
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Info">No workout history yet. Complete your first workout to see it here!</MudAlert>
+        }
+    </MudTabPanel>
+</MudTabs>
+
+<MudDialog @bind-IsVisible="_showAddExerciseDialog" Options="@(new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true })">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Class="mr-2" />
+            Add Exercise to Workout
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_dialogSearchQuery" 
+                     Label="Search exercises" 
+                     Variant="Variant.Outlined"
+                     Adornment="Adornment.Start"
+                     AdornmentIcon="@Icons.Material.Filled.Search"
+                     Immediate="true"
+                     Class="mb-3" />
+        
+        <MudSelect T="Exercise" 
+                  @bind-Value="_selectedExercise" 
+                  Label="Select Exercise" 
+                  Variant="Variant.Outlined" 
+                  FullWidth="true"
+                  AnchorOrigin="Origin.BottomCenter"
+                  TransformOrigin="Origin.TopCenter">
+            @foreach (var exercise in GetFilteredExercisesForDialog())
+            {
+                <MudSelectItem T="Exercise" Value="@exercise">
+                    @exercise.Name
+                    <MudChip Size="Size.Small" Color="GetMuscleGroupColor(exercise.MuscleGroup)" Class="ml-2">
+                        @GetMuscleGroupName(exercise.MuscleGroup)
+                    </MudChip>
+                </MudSelectItem>
+            }
+        </MudSelect>
+        
+        @if (_selectedExercise != null)
+        {
+            <MudAlert Severity="Severity.Info" Class="mt-3">
+                <MudText Typo="Typo.body2"><strong>@_selectedExercise.Name</strong></MudText>
+                <MudText Typo="Typo.body2">@_selectedExercise.Description</MudText>
+            </MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseAddExerciseDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary" 
+                  Variant="Variant.Filled" 
+                  Disabled="@(_selectedExercise == null)"
+                  OnClick="AddExerciseToWorkout">
+            Add Exercise
+        </MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
-    private bool _isLoading = true;
+    private bool _isLoadingExercises = true;
+    private bool _isLoadingHistory = true;
     private List<Exercise> _exercises = new();
+    private List<WorkoutHistory> _workoutHistory = new();
+    private ActiveWorkout? _activeWorkout;
+    private string _searchQuery = "";
+    private string _dialogSearchQuery = "";
+    private bool _showAddExerciseDialog = false;
+    private Exercise? _selectedExercise;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadExercises();
+        await Task.WhenAll(LoadExercises(), LoadWorkoutHistory());
     }
 
     private async Task LoadExercises()
     {
         try
         {
-            _isLoading = true;
+            _isLoadingExercises = true;
             var result = await ApiService.GetAsync<List<Exercise>>("workouts/exercises");
             _exercises = result ?? new();
         }
@@ -81,13 +276,153 @@
         }
         finally
         {
-            _isLoading = false;
+            _isLoadingExercises = false;
         }
+    }
+
+    private async Task LoadWorkoutHistory()
+    {
+        try
+        {
+            _isLoadingHistory = true;
+            var result = await ApiService.GetAsync<List<WorkoutHistory>>("workouts/history");
+            _workoutHistory = result ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading workout history: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingHistory = false;
+        }
+    }
+
+    private void StartWorkout()
+    {
+        _activeWorkout = new ActiveWorkout
+        {
+            WorkoutName = "Workout",
+            WorkoutDate = DateTime.UtcNow,
+            ExerciseLogs = new List<ExerciseLogDto>()
+        };
+    }
+
+    private async Task OpenAddExerciseDialog()
+    {
+        if (!_exercises.Any())
+        {
+            await LoadExercises();
+        }
+        
+        if (!_exercises.Any())
+        {
+            Snackbar.Add("No exercises available. Please check database.", Severity.Warning);
+            return;
+        }
+        
+        _dialogSearchQuery = "";
+        _selectedExercise = null;
+        _showAddExerciseDialog = true;
+    }
+
+    private void CloseAddExerciseDialog()
+    {
+        _showAddExerciseDialog = false;
+        _selectedExercise = null;
+        _dialogSearchQuery = "";
+    }
+
+    private void AddExerciseToWorkout()
+    {
+        if (_selectedExercise == null || _activeWorkout == null) return;
+
+        var exerciseLog = new ExerciseLogDto
+        {
+            ExerciseId = _selectedExercise.Id,
+            ExerciseName = _selectedExercise.Name,
+            OrderIndex = _activeWorkout.ExerciseLogs.Count,
+            Sets = new List<SetLogDto>
+            {
+                new SetLogDto { SetNumber = 1, Weight = 0, Reps = 0, Completed = false }
+            }
+        };
+
+        _activeWorkout.ExerciseLogs.Add(exerciseLog);
+        CloseAddExerciseDialog();
+        Snackbar.Add($"{_selectedExercise.Name} added to workout", Severity.Success);
+    }
+
+    private void RemoveExercise(ExerciseLogDto exerciseLog)
+    {
+        if (_activeWorkout == null) return;
+        _activeWorkout.ExerciseLogs.Remove(exerciseLog);
+    }
+
+    private void AddSet(ExerciseLogDto exerciseLog)
+    {
+        var newSetNumber = exerciseLog.Sets.Count + 1;
+        var lastSet = exerciseLog.Sets.LastOrDefault();
+        
+        exerciseLog.Sets.Add(new SetLogDto 
+        { 
+            SetNumber = newSetNumber,
+            Weight = lastSet?.Weight ?? 0,
+            Reps = lastSet?.Reps ?? 0,
+            Completed = false
+        });
+    }
+
+    private async Task FinishWorkout()
+    {
+        if (_activeWorkout == null) return;
+
+        try
+        {
+            var duration = (int)(DateTime.UtcNow - _activeWorkout.WorkoutDate).TotalMinutes;
+            _activeWorkout.DurationMinutes = duration;
+
+            await ApiService.PostAsync<ActiveWorkout, object>("workouts/log", _activeWorkout);
+            Snackbar.Add("Workout logged successfully!", Severity.Success);
+            _activeWorkout = null;
+            await LoadWorkoutHistory();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error logging workout: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CancelWorkout()
+    {
+        _activeWorkout = null;
+        Snackbar.Add("Workout cancelled", Severity.Info);
     }
 
     private void ShowExerciseDetails(Exercise exercise)
     {
         Snackbar.Add($"Instructions: {exercise.Instructions}", Severity.Info);
+    }
+
+    private IEnumerable<Exercise> GetFilteredExercises()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+            return _exercises;
+
+        return _exercises.Where(e => 
+            e.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+            e.Description?.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) == true);
+    }
+
+    private IEnumerable<Exercise> GetFilteredExercisesForDialog()
+    {
+        if (string.IsNullOrWhiteSpace(_dialogSearchQuery))
+            return _exercises;
+
+        return _exercises.Where(e => 
+            e.Name.Contains(_dialogSearchQuery, StringComparison.OrdinalIgnoreCase) ||
+            e.Description?.Contains(_dialogSearchQuery, StringComparison.OrdinalIgnoreCase) == true ||
+            GetMuscleGroupName(e.MuscleGroup).Contains(_dialogSearchQuery, StringComparison.OrdinalIgnoreCase));
     }
 
     private Color GetMuscleGroupColor(int muscleGroup)
@@ -150,5 +485,38 @@
         public int MuscleGroup { get; set; }
         public int Difficulty { get; set; }
         public string Instructions { get; set; } = "";
+    }
+
+    public class ActiveWorkout
+    {
+        public string WorkoutName { get; set; } = "";
+        public DateTime WorkoutDate { get; set; }
+        public int DurationMinutes { get; set; }
+        public List<ExerciseLogDto> ExerciseLogs { get; set; } = new();
+    }
+
+    public class ExerciseLogDto
+    {
+        public Guid ExerciseId { get; set; }
+        public string ExerciseName { get; set; } = "";
+        public int OrderIndex { get; set; }
+        public List<SetLogDto> Sets { get; set; } = new();
+    }
+
+    public class SetLogDto
+    {
+        public int SetNumber { get; set; }
+        public int Reps { get; set; }
+        public decimal? Weight { get; set; }
+        public bool Completed { get; set; }
+    }
+
+    public class WorkoutHistory
+    {
+        public Guid Id { get; set; }
+        public string WorkoutName { get; set; } = "";
+        public DateTime WorkoutDate { get; set; }
+        public int DurationMinutes { get; set; }
+        public List<ExerciseLogDto> ExerciseLogs { get; set; } = new();
     }
 }

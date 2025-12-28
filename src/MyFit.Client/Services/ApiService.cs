@@ -62,6 +62,32 @@ public class ApiService
         throw new Exception($"API Error: {error}");
     }
 
+    public async Task DeleteAsync(string endpoint)
+    {
+        await EnsureAuthHeader();
+        var response = await _httpClient.DeleteAsync($"/api/{endpoint}");
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new Exception($"API Error: {error}");
+        }
+    }
+
+    public async Task<TResponse?> PutAsync<TRequest, TResponse>(string endpoint, TRequest data)
+    {
+        await EnsureAuthHeader();
+        var response = await _httpClient.PutAsJsonAsync($"/api/{endpoint}", data);
+        
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<TResponse>();
+        }
+        
+        var error = await response.Content.ReadAsStringAsync();
+        throw new Exception($"API Error: {error}");
+    }
+
     public async Task<AuthResponse> LoginAsync(string email, string password)
     {
         try

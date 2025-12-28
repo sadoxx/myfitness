@@ -31,7 +31,7 @@ public class AddMealLogCommandValidator : AbstractValidator<AddMealLogCommand>
 
         RuleFor(x => x.Quantity)
             .GreaterThan(0).WithMessage("Quantity must be greater than 0")
-            .LessThan(100).WithMessage("Quantity must be less than 100");
+            .LessThanOrEqualTo(10000).WithMessage("Quantity must be less than or equal to 10000");
 
         RuleFor(x => x.MealType)
             .IsInEnum().WithMessage("Invalid meal type");

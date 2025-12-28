@@ -26,6 +26,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<MealLog> MealLogs => Set<MealLog>();
     public DbSet<WaterIntake> WaterIntakes => Set<WaterIntake>();
     public DbSet<SleepLog> SleepLogs => Set<SleepLog>();
+    public DbSet<WorkoutLog> WorkoutLogs => Set<WorkoutLog>();
+    public DbSet<ExerciseLog> ExerciseLogs => Set<ExerciseLog>();
+    public DbSet<SetLog> SetLogs => Set<SetLog>();
+    public DbSet<WeightLog> WeightLogs => Set<WeightLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

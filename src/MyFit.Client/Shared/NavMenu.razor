@@ -1,23 +1,40 @@
 @using MudBlazor
 
-<MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
-        Dashboard
+<MudNavMenu Class="pa-2">
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Primary">
+        <span style="font-weight: 500;">Dashboard</span>
     </MudNavLink>
-    <MudNavLink Href="/nutrition" Icon="@Icons.Material.Filled.Restaurant">
-        Nutrition
+    <MudNavLink Href="/nutrition" Icon="@Icons.Material.Filled.Restaurant" IconColor="Color.Success">
+        <span style="font-weight: 500;">Nutrition</span>
     </MudNavLink>
-    <MudNavLink Href="/workouts" Icon="@Icons.Material.Filled.FitnessCenter">
-        Workouts
+    <MudNavLink Href="/workouts" Icon="@Icons.Material.Filled.FitnessCenter" IconColor="Color.Info">
+        <span style="font-weight: 500;">Workouts</span>
     </MudNavLink>
-    <MudNavLink Href="/progress" Icon="@Icons.Material.Filled.TrendingUp">
-        Progress
+    <MudNavLink Href="/progress" Icon="@Icons.Material.Filled.TrendingUp" IconColor="Color.Tertiary">
+        <span style="font-weight: 500;">Progress</span>
     </MudNavLink>
-    <MudDivider Class="my-2" />
-    <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings">
-        Settings
+    <MudDivider Class="my-4" Style="opacity: 0.2;" />
+    <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Default">
+        <span style="font-weight: 500;">Settings</span>
     </MudNavLink>
-    <MudNavLink Href="/logout" Icon="@Icons.Material.Filled.Logout">
-        Logout
+    <MudNavLink Href="/logout" Icon="@Icons.Material.Filled.Logout" IconColor="Color.Error">
+        <span style="font-weight: 500;">Logout</span>
     </MudNavLink>
 </MudNavMenu>
+
+<style>
+    .mud-nav-link {
+        border-radius: 8px;
+        margin: 4px 0;
+        transition: all 0.2s ease;
+    }
+
+    .mud-nav-link:hover {
+        background: rgba(100, 116, 139, 0.15) !important;
+    }
+
+    .mud-nav-link.active {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%) !important;
+        border-left: 3px solid #667eea;
+    }
+</style>

@@ -3,6 +3,8 @@
 @using MyFit.Client.Services
 @inject ApiService ApiService
 @inject StateContainer StateContainer
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <PageTitle>Dashboard - MyFit</PageTitle>
 
@@ -81,52 +83,69 @@ else if (_dashboardData != null)
                 <MudText Typo="Typo.h6" Class="mb-4">Today's Nutrition</MudText>
                 
                 <MudGrid>
-                    <!-- Protein Donut Chart -->
+                    <!-- Protein Progress -->
                     <MudItem xs="12" sm="4">
-                        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-2">Protein</MudText>
-                        <div style="height: 200px;">
-                            <MudChart ChartType="ChartType.Donut" 
-                                     InputData="@_proteinChartData" 
-                                     InputLabels="@_proteinChartLabels"
-                                     Width="100%" 
-                                     Height="100%">
-                            </MudChart>
-                        </div>
-                        <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-2">
-                            @_dashboardData.Nutrition.TotalProtein.ToString("F1")g / @_dashboardData.Profile.DailyProteinGoal.ToString("F1")g
-                        </MudText>
+                        <MudPaper Elevation="0" Class="pa-4 text-center">
+                            <MudText Typo="Typo.subtitle1" Class="mb-2">Protein</MudText>
+                            <div class="mb-3">
+                                <MudText Typo="Typo.h4" Color="Color.Primary">
+                                    @_dashboardData.Nutrition.TotalProtein.ToString("F0")g
+                                </MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Default">
+                                    of @_dashboardData.Profile.DailyProteinGoal.ToString("F0")g
+                                </MudText>
+                            </div>
+                            <MudProgressLinear Color="Color.Primary" 
+                                             Rounded="true" 
+                                             Size="Size.Large"
+                                             Value="@GetPercentage(_dashboardData.Nutrition.TotalProtein, _dashboardData.Profile.DailyProteinGoal)" 
+                                             Class="mb-2" />
+                            <MudText Typo="Typo.body2">
+                                @GetPercentageInt(_dashboardData.Nutrition.TotalProtein, _dashboardData.Profile.DailyProteinGoal)% Complete
+                            </MudText>
+                        </MudPaper>
                     </MudItem>
 
-                    <!-- Carbs Donut Chart -->
+                    <!-- Carbs Progress -->
                     <MudItem xs="12" sm="4">
-                        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-2">Carbs</MudText>
-                        <div style="height: 200px;">
-                            <MudChart ChartType="ChartType.Donut" 
-                                     InputData="@_carbsChartData" 
-                                     InputLabels="@_carbsChartLabels"
-                                     Width="100%" 
-                                     Height="100%">
-                            </MudChart>
-                        </div>
-                        <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-2">
-                            @_dashboardData.Nutrition.TotalCarbs.ToString("F1")g / @_dashboardData.Profile.DailyCarbsGoal.ToString("F1")g
-                        </MudText>
+                        <MudPaper Elevation="0" Class="pa-4 text-center">
+                            <MudText Typo="Typo.subtitle1" Class="mb-2">Carbs</MudText>
+                            <div class="mb-3">
+                                <MudText Typo="Typo.h4" Color="Color.Secondary">
+                                    @_dashboardData.Nutrition.TotalCarbs.ToString("F0")g
+                                </MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Default">
+                                    of @_dashboardData.Profile.DailyCarbsGoal.ToString("F0")g
+                                </MudText>
+                            </div>
+                            <MudProgressLinear Color="Color.Secondary" 
+                                             Rounded="true" 
+                                             Size="Size.Large"
+                                             Value="@GetPercentage(_dashboardData.Nutrition.TotalCarbs, _dashboardData.Profile.DailyCarbsGoal)" 
+                                             Class="mb-2" />
+                            <MudText Typo="Typo.body2">@GetPercentageInt(_dashboardData.Nutrition.TotalCarbs, _dashboardData.Profile.DailyCarbsGoal)% Complete</MudText>
+                        </MudPaper>
                     </MudItem>
 
-                    <!-- Fats Donut Chart -->
+                    <!-- Fats Progress -->
                     <MudItem xs="12" sm="4">
-                        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-2">Fats</MudText>
-                        <div style="height: 200px;">
-                            <MudChart ChartType="ChartType.Donut" 
-                                     InputData="@_fatsChartData" 
-                                     InputLabels="@_fatsChartLabels"
-                                     Width="100%" 
-                                     Height="100%">
-                            </MudChart>
-                        </div>
-                        <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-2">
-                            @_dashboardData.Nutrition.TotalFats.ToString("F1")g / @_dashboardData.Profile.DailyFatsGoal.ToString("F1")g
-                        </MudText>
+                        <MudPaper Elevation="0" Class="pa-4 text-center">
+                            <MudText Typo="Typo.subtitle1" Class="mb-2">Fats</MudText>
+                            <div class="mb-3">
+                                <MudText Typo="Typo.h4" Color="Color.Warning">
+                                    @_dashboardData.Nutrition.TotalFats.ToString("F0")g
+                                </MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Default">
+                                    of @_dashboardData.Profile.DailyFatsGoal.ToString("F0")g
+                                </MudText>
+                            </div>
+                            <MudProgressLinear Color="Color.Warning" 
+                                             Rounded="true" 
+                                             Size="Size.Large"
+                                             Value="@GetPercentage(_dashboardData.Nutrition.TotalFats, _dashboardData.Profile.DailyFatsGoal)" 
+                                             Class="mb-2" />
+                            <MudText Typo="Typo.body2">@GetPercentageInt(_dashboardData.Nutrition.TotalFats, _dashboardData.Profile.DailyFatsGoal)% Complete</MudText>
+                        </MudPaper>
                     </MudItem>
                 </MudGrid>
             </MudPaper>
@@ -154,7 +173,7 @@ else if (_dashboardData != null)
                     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                         <div style="flex: 1;">
                             <MudText Typo="Typo.subtitle2" Color="Color.Info">Water Intake</MudText>
-                            <MudText Typo="Typo.h4">@(_dashboardData.Water.TotalIntake / 1000).ToString("F1")L</MudText>
+                            <MudText Typo="Typo.h4">@((_dashboardData.Water.TotalIntake / 1000).ToString("F1"))L</MudText>
                             <MudProgressLinear Color="Color.Info" 
                                              Value="@((double)_dashboardData.Water.Percentage)" 
                                              Class="mt-2" />
@@ -191,6 +210,185 @@ else if (_dashboardData != null)
             </MudStack>
         </MudItem>
 
+        <!-- Today's Meals Section -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                    <MudText Typo="Typo.h6">Today's Meals</MudText>
+                    <MudButton Variant="Variant.Text" 
+                               Color="Color.Primary" 
+                               Size="Size.Small"
+                               Href="/nutrition">
+                        + Add Meal
+                    </MudButton>
+                </MudStack>
+                @if (_mealLogs.Any())
+                {
+                    <!-- Breakfast -->
+                    @if (GetMealsByType(0).Any())
+                    {
+                        <MudText Typo="Typo.subtitle1" Class="mb-2 mt-3">
+                            <MudIcon Icon="@Icons.Material.Filled.FreeBreakfast" Size="Size.Small" Color="Color.Warning" />
+                            Breakfast
+                        </MudText>
+                        <MudPaper Elevation="1" Class="pa-3 mb-3">
+                            @foreach (var meal in GetMealsByType(0))
+                            {
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                                    <div>
+                                        <MudText Typo="Typo.body1">@meal.FoodName</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            @meal.TotalCalories.ToString("F0") cal • 
+                                            P: @meal.TotalProtein.ToString("F1")g • 
+                                            C: @meal.TotalCarbs.ToString("F1")g • 
+                                            F: @meal.TotalFats.ToString("F1")g
+                                        </MudText>
+                                    </div>
+                                    <MudStack Row="true" Spacing="0">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                                       Size="Size.Small" 
+                                                       Color="Color.Primary"
+                                                       OnClick="@(() => EditMealLog(meal))" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                       Size="Size.Small" 
+                                                       Color="Color.Error"
+                                                       OnClick="@(() => DeleteMealLog(meal.Id))" />
+                                    </MudStack>
+                                </MudStack>
+                            }
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.body2" Align="Align.Right" Color="Color.Primary">
+                                <strong>Total: @GetMealsByType(0).Sum(m => m.TotalCalories).ToString("F0") cal</strong>
+                            </MudText>
+                        </MudPaper>
+                    }
+
+                    <!-- Lunch -->
+                    @if (GetMealsByType(1).Any())
+                    {
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">
+                            <MudIcon Icon="@Icons.Material.Filled.LunchDining" Size="Size.Small" Color="Color.Info" />
+                            Lunch
+                        </MudText>
+                        <MudPaper Elevation="1" Class="pa-3 mb-3">
+                            @foreach (var meal in GetMealsByType(1))
+                            {
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                                    <div>
+                                        <MudText Typo="Typo.body1">@meal.FoodName</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            @meal.TotalCalories.ToString("F0") cal • 
+                                            P: @meal.TotalProtein.ToString("F1")g • 
+                                            C: @meal.TotalCarbs.ToString("F1")g • 
+                                            F: @meal.TotalFats.ToString("F1")g
+                                        </MudText>
+                                    </div>
+                                    <MudStack Row="true" Spacing="0">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                                       Size="Size.Small" 
+                                                       Color="Color.Primary"
+                                                       OnClick="@(() => EditMealLog(meal))" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                       Size="Size.Small" 
+                                                       Color="Color.Error"
+                                                       OnClick="@(() => DeleteMealLog(meal.Id))" />
+                                    </MudStack>
+                                </MudStack>
+                            }
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.body2" Align="Align.Right" Color="Color.Info">
+                                <strong>Total: @GetMealsByType(1).Sum(m => m.TotalCalories).ToString("F0") cal</strong>
+                            </MudText>
+                        </MudPaper>
+                    }
+
+                    <!-- Dinner -->
+                    @if (GetMealsByType(2).Any())
+                    {
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">
+                            <MudIcon Icon="@Icons.Material.Filled.DinnerDining" Size="Size.Small" Color="Color.Primary" />
+                            Dinner
+                        </MudText>
+                        <MudPaper Elevation="1" Class="pa-3 mb-3">
+                            @foreach (var meal in GetMealsByType(2))
+                            {
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                                    <div>
+                                        <MudText Typo="Typo.body1">@meal.FoodName</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            @meal.TotalCalories.ToString("F0") cal • 
+                                            P: @meal.TotalProtein.ToString("F1")g • 
+                                            C: @meal.TotalCarbs.ToString("F1")g • 
+                                            F: @meal.TotalFats.ToString("F1")g
+                                        </MudText>
+                                    </div>
+                                    <MudStack Row="true" Spacing="0">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                                       Size="Size.Small" 
+                                                       Color="Color.Primary"
+                                                       OnClick="@(() => EditMealLog(meal))" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                       Size="Size.Small" 
+                                                       Color="Color.Error"
+                                                       OnClick="@(() => DeleteMealLog(meal.Id))" />
+                                    </MudStack>
+                                </MudStack>
+                            }
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.body2" Align="Align.Right" Color="Color.Primary">
+                                <strong>Total: @GetMealsByType(2).Sum(m => m.TotalCalories).ToString("F0") cal</strong>
+                            </MudText>
+                        </MudPaper>
+                    }
+
+                    <!-- Snacks -->
+                    @if (GetMealsByType(3).Any())
+                    {
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Cookie" Size="Size.Small" Color="Color.Secondary" />
+                            Snacks
+                        </MudText>
+                        <MudPaper Elevation="1" Class="pa-3 mb-3">
+                            @foreach (var meal in GetMealsByType(3))
+                            {
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                                    <div>
+                                        <MudText Typo="Typo.body1">@meal.FoodName</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            @meal.TotalCalories.ToString("F0") cal • 
+                                            P: @meal.TotalProtein.ToString("F1")g • 
+                                            C: @meal.TotalCarbs.ToString("F1")g • 
+                                            F: @meal.TotalFats.ToString("F1")g
+                                        </MudText>
+                                    </div>
+                                    <MudStack Row="true" Spacing="0">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                                       Size="Size.Small" 
+                                                       Color="Color.Primary"
+                                                       OnClick="@(() => EditMealLog(meal))" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                       Size="Size.Small" 
+                                                       Color="Color.Error"
+                                                       OnClick="@(() => DeleteMealLog(meal.Id))" />
+                                    </MudStack>
+                                </MudStack>
+                            }
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.body2" Align="Align.Right" Color="Color.Secondary">
+                                <strong>Total: @GetMealsByType(3).Sum(m => m.TotalCalories).ToString("F0") cal</strong>
+                            </MudText>
+                        </MudPaper>
+                    }
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="py-4">
+                        No meals logged today. Start by adding a meal!
+                    </MudText>
+                }
+            </MudPaper>
+        </MudItem>
+
         <!-- Quick Actions -->
         <MudItem xs="12">
             <MudPaper Elevation="2" Class="pa-4">
@@ -222,14 +420,7 @@ else if (_dashboardData != null)
 @code {
     private bool _isLoading = true;
     private DashboardData? _dashboardData;
-
-    // Chart data
-    private double[] _proteinChartData = Array.Empty<double>();
-    private string[] _proteinChartLabels = { "Consumed", "Remaining" };
-    private double[] _carbsChartData = Array.Empty<double>();
-    private string[] _carbsChartLabels = { "Consumed", "Remaining" };
-    private double[] _fatsChartData = Array.Empty<double>();
-    private string[] _fatsChartLabels = { "Consumed", "Remaining" };
+    private List<MealLogItem> _mealLogs = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -242,28 +433,22 @@ else if (_dashboardData != null)
         try
         {
             _isLoading = true;
-            _dashboardData = await ApiService.GetAsync<DashboardData>("dashboard/summary");
+            
+            // Load dashboard and meal logs in parallel
+            var dashboardTask = ApiService.GetAsync<DashboardData>("dashboard/summary");
+            var mealLogsTask = ApiService.GetAsync<List<MealLogItem>>("nutrition/meal-logs");
+            
+            await Task.WhenAll(dashboardTask, mealLogsTask);
+            
+            _dashboardData = dashboardTask.Result;
+            _mealLogs = mealLogsTask.Result ?? new();
 
             if (_dashboardData != null)
             {
-                // Update chart data
-                _proteinChartData = new double[] 
-                { 
-                    (double)_dashboardData.Nutrition.TotalProtein, 
-                    Math.Max(0, (double)(_dashboardData.Profile.DailyProteinGoal - _dashboardData.Nutrition.TotalProtein))
-                };
-
-                _carbsChartData = new double[] 
-                { 
-                    (double)_dashboardData.Nutrition.TotalCarbs, 
-                    Math.Max(0, (double)(_dashboardData.Profile.DailyCarbsGoal - _dashboardData.Nutrition.TotalCarbs))
-                };
-
-                _fatsChartData = new double[] 
-                { 
-                    (double)_dashboardData.Nutrition.TotalFats, 
-                    Math.Max(0, (double)(_dashboardData.Profile.DailyFatsGoal - _dashboardData.Nutrition.TotalFats))
-                };
+                Console.WriteLine($"Dashboard loaded - Protein: {_dashboardData.Nutrition.TotalProtein}, Goal: {_dashboardData.Profile.DailyProteinGoal}");
+                Console.WriteLine($"Dashboard loaded - Carbs: {_dashboardData.Nutrition.TotalCarbs}, Goal: {_dashboardData.Profile.DailyCarbsGoal}");
+                Console.WriteLine($"Dashboard loaded - Fats: {_dashboardData.Nutrition.TotalFats}, Goal: {_dashboardData.Profile.DailyFatsGoal}");
+                Console.WriteLine($"Meal logs count: {_mealLogs.Count}");
             }
         }
         catch (Exception ex)
@@ -288,6 +473,81 @@ else if (_dashboardData != null)
             Console.WriteLine($"Error adding water: {ex.Message}");
         }
     }
+
+    private async Task DeleteMealLog(Guid id)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Delete Meal",
+            "Are you sure you want to delete this meal?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+        
+        if (confirm == true)
+        {
+            try
+            {
+                await ApiService.DeleteAsync($"nutrition/meal-logs/{id}");
+                Snackbar.Add("Meal deleted!", Severity.Success);
+                await LoadDashboardData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task EditMealLog(MealLogItem meal)
+    {
+        var parameters = new DialogParameters<EditMealDialog>
+        {
+            { x => x.MealLog, meal }
+        };
+
+        var dialog = await DialogService.ShowAsync<EditMealDialog>("Edit Meal", parameters);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            await LoadDashboardData();
+            Snackbar.Add("Meal updated!", Severity.Success);
+        }
+    }
+
+    private string GetMealTypeName(int mealType) => mealType switch
+    {
+        0 => "Breakfast",
+        1 => "Lunch",
+        2 => "Dinner",
+        3 => "Snack",
+        _ => "Other"
+    };
+
+    private int GetPercentageInt(decimal consumed, decimal goal)
+    {
+        if (goal <= 0) return 0;
+        return (int)Math.Min(100, consumed / goal * 100);
+    }
+
+    private double GetPercentage(decimal consumed, decimal goal)
+    {
+        if (goal <= 0) return 0;
+        return Math.Min(100, (double)(consumed / goal * 100));
+    }
+
+    private List<MealLogItem> GetMealsByType(int mealType)
+    {
+        return _mealLogs.Where(m => m.MealType == mealType).ToList();
+    }
+
+    private Color GetMealTypeColor(int mealType) => mealType switch
+    {
+        0 => Color.Warning,
+        1 => Color.Info,
+        2 => Color.Primary,
+        3 => Color.Secondary,
+        _ => Color.Default
+    };
 
     public void Dispose()
     {
@@ -332,5 +592,19 @@ else if (_dashboardData != null)
         public decimal TotalHours { get; set; }
         public int? QualityRating { get; set; }
         public decimal Goal { get; set; }
+    }
+
+    public class MealLogItem
+    {
+        public Guid Id { get; set; }
+        public string FoodName { get; set; } = "";
+        public int MealType { get; set; }
+        public decimal Quantity { get; set; }
+        public string QuantityUnit { get; set; } = "";
+        public decimal TotalCalories { get; set; }
+        public decimal TotalProtein { get; set; }
+        public decimal TotalCarbs { get; set; }
+        public decimal TotalFats { get; set; }
+        public DateTime LogDate { get; set; }
     }
 }

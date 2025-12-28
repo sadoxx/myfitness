@@ -93,12 +93,53 @@
                 </MudButton>
             </MudStack>
         </MudPaper>
+
+        <!-- Today's Meal Logs -->
+        <MudPaper Elevation="2" Class="pa-6 mt-4">
+            <MudText Typo="Typo.h6" GutterBottom="true">Today's Meals</MudText>
+            @if (_mealLogs.Any())
+            {
+                <MudList Dense="true">
+                    @foreach (var meal in _mealLogs)
+                    {
+                        <MudListItem>
+                            <MudGrid>
+                                <MudItem xs="7">
+                                    <MudText Typo="Typo.body1">@meal.FoodName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @GetMealTypeName(meal.MealType) • @meal.Quantity@meal.QuantityUnit
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="4" Class="d-flex align-center">
+                                    <MudText Typo="Typo.body2">
+                                        @meal.TotalCalories.ToString("F0") cal
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="1" Class="d-flex align-center justify-end">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                   Size="Size.Small" 
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => DeleteMealLog(meal.Id))" />
+                                </MudItem>
+                            </MudGrid>
+                        </MudListItem>
+                        <MudDivider />
+                    }
+                </MudList>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
+                    No meals logged yet. Search and log food above!
+                </MudText>
+            }
+        </MudPaper>
     </MudItem>
     
     <MudItem xs="12" md="4">
         <MudPaper Elevation="2" Class="pa-6">
             <MudText Typo="Typo.h6" GutterBottom="true">Today's Summary</MudText>
-            @if (_todaySummary != null)
+            @if (_todaySummary != null && (_todaySummary.TotalCalories > 0 || _mealLogs.Any()))
             {
                 <MudStack Spacing="3" Class="mt-4">
                     <div>
@@ -134,10 +175,16 @@
     private bool _hasSearched = false;
     private List<FoodItem> _searchResults = new();
     private NutritionSummary? _todaySummary;
+    private List<MealLogItem> _mealLogs = new();
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadTodaySummary();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        await Task.WhenAll(LoadTodaySummary(), LoadMealLogs());
     }
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
@@ -188,9 +235,9 @@
         var dialog = await DialogService.ShowAsync<LogMealDialog>("Log Meal", parameters);
         var result = await dialog.Result;
 
-        if (!result.Canceled)
+        if (result != null && !result.Canceled)
         {
-            await LoadTodaySummary();
+            await LoadData();
             Snackbar.Add("Meal logged successfully!", Severity.Success);
         }
     }
@@ -217,8 +264,44 @@
         catch
         {
             // Silent fail - user might not be logged in
+            _todaySummary = null;
         }
     }
+
+    private async Task LoadMealLogs()
+    {
+        try
+        {
+            _mealLogs = await ApiService.GetAsync<List<MealLogItem>>("nutrition/meal-logs") ?? new();
+        }
+        catch
+        {
+            _mealLogs = new();
+        }
+    }
+
+    private async Task DeleteMealLog(Guid id)
+    {
+        try
+        {
+            await ApiService.DeleteAsync($"nutrition/meal-logs/{id}");
+            Snackbar.Add("Meal removed!", Severity.Success);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error removing meal: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string GetMealTypeName(int mealType) => mealType switch
+    {
+        0 => "Breakfast",
+        1 => "Lunch",
+        2 => "Dinner",
+        3 => "Snack",
+        _ => "Other"
+    };
 
     public class FoodItem
     {
@@ -237,5 +320,19 @@
         public decimal TotalProtein { get; set; }
         public decimal TotalCarbs { get; set; }
         public decimal TotalFats { get; set; }
+    }
+
+    public class MealLogItem
+    {
+        public Guid Id { get; set; }
+        public string FoodName { get; set; } = "";
+        public int MealType { get; set; }
+        public decimal Quantity { get; set; }
+        public string QuantityUnit { get; set; } = "";
+        public decimal TotalCalories { get; set; }
+        public decimal TotalProtein { get; set; }
+        public decimal TotalCarbs { get; set; }
+        public decimal TotalFats { get; set; }
+        public DateTime LogDate { get; set; }
     }
 }

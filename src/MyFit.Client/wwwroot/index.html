@@ -6,17 +6,284 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MyFit - Fitness & Nutrition Tracker</title>
     <base href="/" />
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        }
+
+        body {
+            background: #0f172a;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Custom App Bar */
+        .app-bar-custom {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Custom Drawer */
+        .drawer-custom {
+            background: #1e293b !important;
+            border-right: 1px solid rgba(148, 163, 184, 0.1) !important;
+        }
+
+        .drawer-header-custom {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        /* Main Content */
+        .main-content-custom {
+            background: #0f172a;
+        }
+
+        /* Cards with gradient borders */
+        .mud-paper {
+            background: linear-gradient(135deg, #1e293b 0%, #1a2332 100%) !important;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px !important;
+            transition: all 0.3s ease;
+        }
+
+        .mud-paper:hover {
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Progress bars with gradients */
+        .mud-progress-linear .mud-progress-linear-bar {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
+        }
+
+        .mud-progress-circular-circle {
+            stroke: url(#gradient) !important;
+        }
+
+        /* Buttons */
+        .mud-button-filled-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .mud-button-filled-primary:hover {
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .mud-button-filled-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        }
+
+        /* Chips */
+        .mud-chip {
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        /* Tables */
+        .mud-table {
+            background: transparent !important;
+        }
+
+        .mud-table-head {
+            background: rgba(30, 41, 59, 0.5) !important;
+        }
+
+        .mud-table-row:hover {
+            background: rgba(100, 116, 139, 0.1) !important;
+        }
+
+        /* Timeline */
+        .mud-timeline-item-dot {
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+        }
+
+        /* Inputs - Force transparent backgrounds */
+        .mud-input-root,
+        .mud-select,
+        .mud-input {
+            border-radius: 8px !important;
+        }
+
+        /* Remove ALL white backgrounds from inputs */
+        .mud-input-root,
+        .mud-input-root *,
+        .mud-input-slot,
+        .mud-input-slot *,
+        .mud-input,
+        .mud-input *,
+        input.mud-input-slot,
+        input[type="text"],
+        input[type="number"],
+        .mud-input-control,
+        .mud-input-control-input-container,
+        .mud-select-input,
+        .mud-select .mud-input-slot,
+        .mud-picker-input,
+        .mud-input-outlined .mud-input-slot,
+        .mud-input-root-outlined,
+        .mud-input-root-outlined *,
+        .mud-input-root-margin-dense {
+            background-color: transparent !important;
+            background: transparent !important;
+        }
+
+        /* Text color */
+        .mud-input-slot,
+        .mud-input-root input,
+        .mud-select input,
+        .mud-input,
+        input {
+            color: #f8fafc !important;
+        }
+
+        /* Borders */
+        .mud-input-outlined .mud-input-outlined-border {
+            border-color: rgba(148, 163, 184, 0.3) !important;
+        }
+
+        .mud-input-outlined:hover .mud-input-outlined-border {
+            border-color: rgba(102, 126, 234, 0.6) !important;
+        }
+
+        .mud-input-outlined.mud-input-focused .mud-input-outlined-border {
+            border-color: #667eea !important;
+            border-width: 2px !important;
+        }
+
+        /* Labels */
+        .mud-input-label,
+        .mud-input-label-animated {
+            color: #cbd5e1 !important;
+        }
+
+        .mud-input-label-focused {
+            color: #667eea !important;
+        }
+
+        /* Dialogs */
+        .mud-dialog {
+            background: linear-gradient(135deg, #1e293b 0%, #1a2332 100%) !important;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 16px !important;
+        }
+
+        /* Snackbar */
+        .mud-snackbar {
+            border-radius: 12px !important;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Loading screen */
+        #app > div {
+            background: #0f172a;
+            color: #f8fafc;
+        }
+
+        .loading-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .loading-container h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .loading-container p {
+            color: #cbd5e1;
+            font-size: 1.1rem;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-top: 1.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Gradient definitions */
+        svg defs {
+            position: absolute;
+        }
+
+        /* Popover fixes */
+        .mud-popover-provider {
+            position: static !important;
+        }
+        .mud-popover {
+            position: fixed !important;
+            z-index: 1400 !important;
+            background: #1e293b !important;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+        }
+        .mud-select-popover {
+            position: fixed !important;
+        }
+    </style>
 </head>
 
 <body>
     <div id="app">
-        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
-            <h1>Loading MyFit...</h1>
-            <p>Please wait while we load your fitness dashboard</p>
+        <div class="loading-container">
+            <h1>MyFit</h1>
+            <p>Loading your fitness dashboard...</p>
+            <div class="loading-spinner"></div>
         </div>
     </div>
+
+    <svg style="position: absolute; width: 0; height: 0;">
+        <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+    </svg>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.

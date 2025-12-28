@@ -18,6 +18,10 @@ public interface IApplicationDbContext
     DbSet<MealLog> MealLogs { get; }
     DbSet<WaterIntake> WaterIntakes { get; }
     DbSet<SleepLog> SleepLogs { get; }
+    DbSet<WorkoutLog> WorkoutLogs { get; }
+    DbSet<ExerciseLog> ExerciseLogs { get; }
+    DbSet<SetLog> SetLogs { get; }
+    DbSet<WeightLog> WeightLogs { get; }
     
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

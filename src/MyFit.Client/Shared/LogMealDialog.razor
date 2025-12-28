@@ -4,57 +4,92 @@
 
 <MudDialog>
     <DialogContent>
-        <MudTextField @bind-Value="_servingSize" 
-                      Label="Serving Size (grams)" 
-                      Variant="Variant.Outlined"
-                      InputType="InputType.Number"
-                      Class="mb-4" />
-        
-        <MudSelect @bind-Value="_mealType" Label="Meal Type" Variant="Variant.Outlined">
-            <MudSelectItem Value="0">Breakfast</MudSelectItem>
-            <MudSelectItem Value="1">Lunch</MudSelectItem>
-            <MudSelectItem Value="2">Dinner</MudSelectItem>
-            <MudSelectItem Value="3">Snack</MudSelectItem>
-        </MudSelect>
+        <MudStack Spacing="4">
+            <MudTextField @bind-Value="_servingSize" 
+                          Label="Serving Size (grams)" 
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Number" />
+            
+            <MudSelect T="int" 
+                       @bind-Value="_mealType" 
+                       Label="Meal Type" 
+                       Variant="Variant.Outlined"
+                       AnchorOrigin="Origin.BottomCenter"
+                       TransformOrigin="Origin.TopCenter"
+                       PopoverClass="my-custom-popover">
+                <MudSelectItem T="int" Value="0">🍳 Breakfast</MudSelectItem>
+                <MudSelectItem T="int" Value="1">🍱 Lunch</MudSelectItem>
+                <MudSelectItem T="int" Value="2">🍽️ Dinner</MudSelectItem>
+                <MudSelectItem T="int" Value="3">🍪 Snack</MudSelectItem>
+            </MudSelect>
 
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">
-            Logging: @FoodItem?.Name
-        </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Logging: <strong>@(FoodItem?.Name ?? "Unknown Item")</strong>
+            </MudText>
+        </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Log Meal</MudButton>
+        <MudButton OnClick="Cancel" Disabled="_isLoading">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="_isLoading">
+            @if (_isLoading)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                <MudText Class="ms-2">Logging...</MudText>
+            }
+            else
+            {
+                <MudText>Log Meal</MudText>
+            }
+        </MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
     
+    // IMPORTANT: Ensure this matches the namespace of your Nutrition page
     [Parameter] public MyFit.Client.Pages.Nutrition.FoodItem? FoodItem { get; set; }
 
     private decimal _servingSize = 100;
     private int _mealType = 0;
+    private bool _isLoading = false;
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel()
+    {
+        // Safe cancel
+        if (MudDialog != null)
+            MudDialog.Cancel();
+    }
 
     private async Task Submit()
     {
+        if (FoodItem == null) return;
+
+        _isLoading = true;
         try
         {
+            // Matches AddMealLogRequest in NutritionController.cs
             await ApiService.PostAsync<object, object>("nutrition/meal-log", new
             {
-                ExternalFoodId = FoodItem?.ExternalId,
-                ExternalSource = FoodItem?.ExternalSource ?? "openfoodfacts",
-                ServingSize = _servingSize,
-                MealType = _mealType
+                ExternalId = FoodItem.ExternalId,      // Correct property name
+                ExternalSource = "OpenFoodFacts",      // Correct casing
+                Quantity = _servingSize,
+                MealType = _mealType,
+                QuantityUnit = "g",
+                LogDate = DateTime.UtcNow
             });
             
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
         {
-            // Handle error
-            MudDialog.Cancel();
+            Console.WriteLine($"Log Meal Error: {ex.Message}");
+            // Optional: You could inject ISnackbar and show an error here
+            MudDialog.Cancel(); 
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 }

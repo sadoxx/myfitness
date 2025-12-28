@@ -1,32 +1,406 @@
 @page "/progress"
 @using MudBlazor
+@using MyFit.Client.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
 
 <PageTitle>Progress - MyFit</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-6">Your Progress</MudText>
+<MudText Typo="Typo.h4" Class="mb-6">
+    <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Class="mr-2" />
+    Your Progress
+</MudText>
 
 <MudGrid>
+    <!-- Weight Tracking Card -->
     <MudItem xs="12" md="6">
         <MudPaper Elevation="2" Class="pa-6">
-            <MudText Typo="Typo.h6" GutterBottom="true">Weight Tracking</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Track your weight over time to monitor your progress.
-            </MudText>
-            <MudText Typo="Typo.body2" Class="mt-4" Color="Color.Info">
-                🚧 Weight tracking charts coming soon!
-            </MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                <MudText Typo="Typo.h6">Weight Tracking</MudText>
+                <MudButton Size="Size.Small" 
+                          Variant="Variant.Filled" 
+                          Color="Color.Primary"
+                          StartIcon="@Icons.Material.Filled.Add"
+                          OnClick="OpenWeightDialog">
+                    Log Weight
+                </MudButton>
+            </MudStack>
+
+            @if (_isLoadingWeight)
+            {
+                <MudProgressLinear Indeterminate="true" />
+            }
+            else if (_weightLogs.Any())
+            {
+                <MudText Typo="Typo.h4" Color="Color.Primary" Class="mb-2">
+                    @_weightLogs.First().Weight.ToString("F1") kg
+                </MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Last updated: @_weightLogs.First().LogDate.ToString("MMM dd, yyyy")
+                </MudText>
+
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Recent Entries:</MudText>
+                @foreach (var log in _weightLogs.Take(5))
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+                        <MudText Typo="Typo.body2">@log.LogDate.ToString("MMM dd")</MudText>
+                        <MudText Typo="Typo.body1"><strong>@log.Weight.ToString("F1") kg</strong></MudText>
+                    </MudStack>
+                }
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">No weight entries yet. Log your first weight!</MudAlert>
+            }
         </MudPaper>
     </MudItem>
-    
+
+    <!-- Weekly Stats Card -->
     <MudItem xs="12" md="6">
         <MudPaper Elevation="2" Class="pa-6">
-            <MudText Typo="Typo.h6" GutterBottom="true">Body Measurements</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Log your body measurements and track changes.
-            </MudText>
-            <MudText Typo="Typo.body2" Class="mt-4" Color="Color.Info">
-                🚧 Measurement tracking coming soon!
-            </MudText>
+            <MudText Typo="Typo.h6" Class="mb-4">Weekly Summary</MudText>
+            
+            @if (_isLoadingStats)
+            {
+                <MudProgressLinear Indeterminate="true" />
+            }
+            else if (_weeklyStats != null)
+            {
+                <MudStack Spacing="3">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Restaurant" Color="Color.Primary" />
+                            <MudText Typo="Typo.body1">Meals Logged</MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.h6" Color="Color.Primary">@_weeklyStats.MealsLogged</MudText>
+                    </MudStack>
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" Color="Color.Success" />
+                            <MudText Typo="Typo.body1">Workouts Completed</MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.h6" Color="Color.Success">@_weeklyStats.WorkoutsCompleted</MudText>
+                    </MudStack>
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Color="Color.Warning" />
+                            <MudText Typo="Typo.body1">Avg Daily Calories</MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.h6" Color="Color.Warning">@_weeklyStats.AvgDailyCalories.ToString("F0")</MudText>
+                    </MudStack>
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Timer" Color="Color.Info" />
+                            <MudText Typo="Typo.body1">Total Exercise Time</MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.h6" Color="Color.Info">@_weeklyStats.TotalExerciseMinutes min</MudText>
+                    </MudStack>
+                </MudStack>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">Start tracking to see your weekly stats!</MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Nutrition Progress Card -->
+    <MudItem xs="12">
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudText Typo="Typo.h6" Class="mb-4">7-Day Nutrition Overview</MudText>
+            
+            @if (_isLoadingNutrition)
+            {
+                <MudProgressLinear Indeterminate="true" />
+            }
+            else if (_nutritionProgress.Any())
+            {
+                <MudSimpleTable Striped="true" Hover="true" Dense="true">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Calories</th>
+                            <th>Protein (g)</th>
+                            <th>Carbs (g)</th>
+                            <th>Fats (g)</th>
+                            <th>Meals</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var day in _nutritionProgress)
+                        {
+                            <tr>
+                                <td><strong>@day.Date.ToString("MMM dd")</strong></td>
+                                <td>
+                                    <MudChip Size="Size.Small" Color="@GetCalorieColor(day.Calories, day.CalorieGoal)">
+                                        @day.Calories.ToString("F0") / @day.CalorieGoal.ToString("F0")
+                                    </MudChip>
+                                </td>
+                                <td>@day.Protein.ToString("F0")</td>
+                                <td>@day.Carbs.ToString("F0")</td>
+                                <td>@day.Fats.ToString("F0")</td>
+                                <td>@day.MealCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">Start logging meals to see your nutrition progress!</MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Workout Progress Card -->
+    <MudItem xs="12">
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudText Typo="Typo.h6" Class="mb-4">Recent Workouts</MudText>
+            
+            @if (_isLoadingWorkouts)
+            {
+                <MudProgressLinear Indeterminate="true" />
+            }
+            else if (_recentWorkouts.Any())
+            {
+                <MudTimeline TimelineOrientation="TimelineOrientation.Vertical" TimelinePosition="TimelinePosition.Start">
+                    @foreach (var workout in _recentWorkouts.Take(7))
+                    {
+                        <MudTimelineItem Color="Color.Success" Size="Size.Small">
+                            <MudStack>
+                                <MudText Typo="Typo.body1"><strong>@workout.WorkoutName</strong></MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @workout.WorkoutDate.ToString("MMM dd, yyyy") • @workout.DurationMinutes min • @workout.ExerciseCount exercises
+                                </MudText>
+                            </MudStack>
+                        </MudTimelineItem>
+                    }
+                </MudTimeline>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">Complete your first workout to see it here!</MudAlert>
+            }
         </MudPaper>
     </MudItem>
 </MudGrid>
+
+<!-- Weight Log Dialog -->
+<MudDialog @bind-IsVisible="_showWeightDialog" Options="@(new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true })">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Log Weight</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudNumericField @bind-Value="_newWeight" 
+                        Label="Weight (kg)" 
+                        Variant="Variant.Outlined"
+                        Step="0.1M"
+                        Min="30M"
+                        Max="300M"
+                        FullWidth="true" />
+        
+        <MudDatePicker @bind-Date="_newWeightDate"
+                      Label="Date"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      MaxDate="DateTime.Today"
+                      Class="mt-3" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseWeightDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary" 
+                  Variant="Variant.Filled" 
+                  Disabled="@(_newWeight <= 0)"
+                  OnClick="SaveWeight">
+            Save
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private bool _isLoadingWeight = true;
+    private bool _isLoadingStats = true;
+    private bool _isLoadingNutrition = true;
+    private bool _isLoadingWorkouts = true;
+    
+    private List<WeightLog> _weightLogs = new();
+    private WeeklyStats? _weeklyStats;
+    private List<DailyNutrition> _nutritionProgress = new();
+    private List<WorkoutSummary> _recentWorkouts = new();
+    
+    private bool _showWeightDialog = false;
+    private decimal _newWeight = 0;
+    private DateTime? _newWeightDate = DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            LoadWeightLogs(),
+            LoadWeeklyStats(),
+            LoadNutritionProgress(),
+            LoadRecentWorkouts()
+        );
+    }
+
+    private async Task LoadWeightLogs()
+    {
+        try
+        {
+            _isLoadingWeight = true;
+            var result = await ApiService.GetAsync<List<WeightLog>>("progress/weight");
+            _weightLogs = result?.OrderByDescending(w => w.LogDate).ToList() ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading weight logs: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingWeight = false;
+        }
+    }
+
+    private async Task LoadWeeklyStats()
+    {
+        try
+        {
+            _isLoadingStats = true;
+            _weeklyStats = await ApiService.GetAsync<WeeklyStats>("progress/weekly-stats");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading stats: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingStats = false;
+        }
+    }
+
+    private async Task LoadNutritionProgress()
+    {
+        try
+        {
+            _isLoadingNutrition = true;
+            var result = await ApiService.GetAsync<List<DailyNutrition>>("progress/nutrition");
+            _nutritionProgress = result?.OrderByDescending(n => n.Date).ToList() ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading nutrition progress: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingNutrition = false;
+        }
+    }
+
+    private async Task LoadRecentWorkouts()
+    {
+        try
+        {
+            _isLoadingWorkouts = true;
+            var result = await ApiService.GetAsync<List<WorkoutSummary>>("progress/workouts");
+            _recentWorkouts = result?.OrderByDescending(w => w.WorkoutDate).ToList() ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading workouts: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingWorkouts = false;
+        }
+    }
+
+    private void OpenWeightDialog()
+    {
+        _newWeight = _weightLogs.Any() ? _weightLogs.First().Weight : 0;
+        _newWeightDate = DateTime.Today;
+        _showWeightDialog = true;
+    }
+
+    private void CloseWeightDialog()
+    {
+        _showWeightDialog = false;
+        _newWeight = 0;
+        _newWeightDate = DateTime.Today;
+    }
+
+    private async Task SaveWeight()
+    {
+        try
+        {
+            var request = new LogWeightRequest
+            {
+                Weight = _newWeight,
+                LogDate = _newWeightDate ?? DateTime.Today
+            };
+
+            await ApiService.PostAsync<LogWeightRequest, object>("progress/weight", request);
+
+            Snackbar.Add("Weight logged successfully!", Severity.Success);
+            CloseWeightDialog();
+            await LoadWeightLogs();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving weight: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private Color GetCalorieColor(decimal calories, decimal goal)
+    {
+        if (goal == 0) return Color.Default;
+        
+        var percentage = (calories / goal) * 100;
+        
+        if (percentage >= 90 && percentage <= 110) return Color.Success;
+        if (percentage >= 80 && percentage <= 120) return Color.Warning;
+        return Color.Error;
+    }
+
+    public class WeightLog
+    {
+        public Guid Id { get; set; }
+        public decimal Weight { get; set; }
+        public DateTime LogDate { get; set; }
+    }
+
+    public class WeeklyStats
+    {
+        public int MealsLogged { get; set; }
+        public int WorkoutsCompleted { get; set; }
+        public decimal AvgDailyCalories { get; set; }
+        public int TotalExerciseMinutes { get; set; }
+    }
+
+    public class DailyNutrition
+    {
+        public DateTime Date { get; set; }
+        public decimal Calories { get; set; }
+        public decimal Protein { get; set; }
+        public decimal Carbs { get; set; }
+        public decimal Fats { get; set; }
+        public int MealCount { get; set; }
+        public decimal CalorieGoal { get; set; }
+    }
+
+    public class WorkoutSummary
+    {
+        public Guid Id { get; set; }
+        public string WorkoutName { get; set; } = "";
+        public DateTime WorkoutDate { get; set; }
+        public int DurationMinutes { get; set; }
+        public int ExerciseCount { get; set; }
+    }
+
+    public class LogWeightRequest
+    {
+        public decimal Weight { get; set; }
+        public DateTime LogDate { get; set; }
+    }
+}

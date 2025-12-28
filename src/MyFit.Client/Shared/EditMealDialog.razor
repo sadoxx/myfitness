@@ -1,0 +1,91 @@
+@using MudBlazor
+@using MyFit.Client.Services
+@inject ApiService ApiService
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.subtitle1" Class="mb-4">@MealLog?.FoodName</MudText>
+        
+        <MudTextField @bind-Value="_quantity" 
+                      Label="Serving Size (grams)" 
+                      Variant="Variant.Outlined"
+                      InputType="InputType.Number"
+                      Class="mb-4" />
+        
+        <MudSelect @bind-Value="_mealType" Label="Meal Type" Variant="Variant.Outlined">
+            <MudSelectItem Value="0">Breakfast</MudSelectItem>
+            <MudSelectItem Value="1">Lunch</MudSelectItem>
+            <MudSelectItem Value="2">Dinner</MudSelectItem>
+            <MudSelectItem Value="3">Snack</MudSelectItem>
+        </MudSelect>
+
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">
+            Updated macros will be calculated based on serving size.
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_isLoading">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="_isLoading">
+            @if (_isLoading)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                <MudText Class="ms-2">Saving...</MudText>
+            }
+            else
+            {
+                <MudText>Save Changes</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    
+    [Parameter] public MyFit.Client.Pages.Index.MealLogItem? MealLog { get; set; }
+
+    private decimal _quantity;
+    private int _mealType;
+    private bool _isLoading = false;
+
+    protected override void OnInitialized()
+    {
+        if (MealLog != null)
+        {
+            _quantity = MealLog.Quantity;
+            _mealType = MealLog.MealType;
+        }
+    }
+
+    private void Cancel()
+    {
+        if (MudDialog != null)
+            MudDialog.Cancel();
+    }
+
+    private async Task Submit()
+    {
+        if (MealLog == null) return;
+
+        _isLoading = true;
+        try
+        {
+            await ApiService.PutAsync<object, object>($"nutrition/meal-logs/{MealLog.Id}", new
+            {
+                Quantity = _quantity,
+                MealType = _mealType
+            });
+            
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Edit Meal Error: {ex.Message}");
+            MudDialog.Cancel(); 
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

@@ -149,6 +149,102 @@ public class NutritionController : ControllerBase
 
         return Ok(new { WaterIntakeId = result.Data, Message = "Water intake logged" });
     }
+
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetNutritionSummary([FromQuery] DateTime? date)
+    {
+        var userId = GetCurrentUserId();
+        var targetDate = (date ?? DateTime.UtcNow).Date;
+
+        // Get meal logs for the day
+        var mealLogs = await _context.MealLogs
+            .Where(m => m.UserId == userId && m.LogDate.Date == targetDate)
+            .ToListAsync();
+
+        var response = new
+        {
+            TotalCalories = mealLogs.Sum(m => m.TotalCalories),
+            TotalProtein = mealLogs.Sum(m => m.TotalProtein),
+            TotalCarbs = mealLogs.Sum(m => m.TotalCarbs),
+            TotalFats = mealLogs.Sum(m => m.TotalFats)
+        };
+
+        return Ok(response);
+    }
+
+    [HttpGet("meal-logs")]
+    public async Task<IActionResult> GetMealLogs([FromQuery] DateTime? date)
+    {
+        var userId = GetCurrentUserId();
+        var targetDate = (date ?? DateTime.UtcNow).Date;
+
+        var mealLogs = await _context.MealLogs
+            .Include(m => m.FoodItem)
+            .Where(m => m.UserId == userId && m.LogDate.Date == targetDate)
+            .OrderByDescending(m => m.LogDate)
+            .Select(m => new
+            {
+                m.Id,
+                FoodName = m.FoodItem.Name,
+                m.MealType,
+                m.Quantity,
+                m.QuantityUnit,
+                m.TotalCalories,
+                m.TotalProtein,
+                m.TotalCarbs,
+                m.TotalFats,
+                m.LogDate
+            })
+            .ToListAsync();
+
+        return Ok(mealLogs);
+    }
+
+    [HttpDelete("meal-logs/{id}")]
+    public async Task<IActionResult> DeleteMealLog(Guid id)
+    {
+        var userId = GetCurrentUserId();
+        var mealLog = await _context.MealLogs
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId);
+
+        if (mealLog == null)
+        {
+            return NotFound(new { Message = "Meal log not found" });
+        }
+
+        _context.MealLogs.Remove(mealLog);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "Meal log deleted" });
+    }
+
+    [HttpPut("meal-logs/{id}")]
+    public async Task<IActionResult> UpdateMealLog(Guid id, [FromBody] UpdateMealLogRequest request)
+    {
+        var userId = GetCurrentUserId();
+        var mealLog = await _context.MealLogs
+            .Include(m => m.FoodItem)
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId);
+
+        if (mealLog == null)
+        {
+            return NotFound(new { Message = "Meal log not found" });
+        }
+
+        // Recalculate nutritional values based on new quantity
+        // Food item values are per 100g, so divide quantity by 100
+        var multiplier = request.Quantity / 100m;
+        mealLog.Quantity = request.Quantity;
+        mealLog.MealType = (MyFit.Domain.Enums.MealType)request.MealType;
+        mealLog.TotalCalories = mealLog.FoodItem.Calories * multiplier;
+        mealLog.TotalProtein = mealLog.FoodItem.Protein * multiplier;
+        mealLog.TotalCarbs = mealLog.FoodItem.Carbs * multiplier;
+        mealLog.TotalFats = mealLog.FoodItem.Fats * multiplier;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "Meal log updated" });
+    }
 }
 
 public class AddMealLogRequest
@@ -166,4 +262,10 @@ public class AddWaterIntakeRequest
 {
     public decimal Amount { get; set; }
     public DateTime? Date { get; set; }
+}
+
+public class UpdateMealLogRequest
+{
+    public decimal Quantity { get; set; }
+    public int MealType { get; set; }
 }

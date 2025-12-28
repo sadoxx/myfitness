@@ -27,7 +27,8 @@ public class AddMealLogCommandHandler : IRequestHandler<AddMealLogCommand, Resul
         }
 
         // Calculate nutritional values based on quantity
-        var multiplier = request.Quantity;
+        // Food item values are per 100g, so divide quantity by 100
+        var multiplier = request.Quantity / 100m;
         var mealLog = new MealLog
         {
             Id = Guid.NewGuid(),

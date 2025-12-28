@@ -3,16 +3,10 @@ using MyFit.Application.Common.Interfaces;
 using MyFit.Domain.Entities;
 using MyFit.Infrastructure.Data;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MyFit.Infrastructure.Services;
 
-/// <summary>
-/// Food Service implementing the Hybrid API Strategy:
-/// 1. Search OpenFoodFacts API
-/// 2. Check if food exists locally by ExternalId
-/// 3. If not, cache it locally
-/// 4. Return local FoodItem ID
-/// </summary>
 public class FoodService : IFoodService
 {
     private readonly AppDbContext _context;
@@ -23,87 +17,79 @@ public class FoodService : IFoodService
     {
         _context = context;
         _httpClient = httpClientFactory.CreateClient();
+        // User-Agent is required by OpenFoodFacts or they will block the request
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "MyFitApp/1.0 (student-project)");
     }
 
-    /// <summary>
-    /// Search for food items from OpenFoodFacts API
-    /// </summary>
     public async Task<List<FoodSearchResult>> SearchFoodItemsAsync(string query, int maxResults = 20)
     {
         try
         {
             var url = $"{OpenFoodFactsApiUrl}?search_terms={Uri.EscapeDataString(query)}&search_simple=1&json=1&page_size={maxResults}";
             
-            var response = await _httpClient.GetAsync(url);
+            // OPTIMIZATION: Read headers only first, then stream the content
+            var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
 
-            var jsonString = await response.Content.ReadAsStringAsync();
-            var openFoodResponse = JsonSerializer.Deserialize<OpenFoodFactsResponse>(jsonString, 
+            using var stream = await response.Content.ReadAsStreamAsync();
+            var openFoodResponse = await JsonSerializer.DeserializeAsync<OpenFoodFactsResponse>(stream, 
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
             if (openFoodResponse?.Products == null)
                 return new List<FoodSearchResult>();
 
-            var results = openFoodResponse.Products
+            return openFoodResponse.Products
                 .Where(p => !string.IsNullOrEmpty(p.Code) && !string.IsNullOrEmpty(p.ProductName))
                 .Select(p => new FoodSearchResult
                 {
-                    ExternalId = p.Code,
+                    ExternalId = p.Code!,
                     Name = p.ProductName ?? "Unknown",
                     Brand = p.Brands,
-                    Calories = ParseDecimal(p.EnergyKcal100g),
-                    Protein = ParseDecimal(p.Proteins100g),
-                    Carbs = ParseDecimal(p.Carbohydrates100g),
-                    Fats = ParseDecimal(p.Fat100g),
-                    ServingSize = 100, // OpenFoodFacts uses per 100g
+                    // Map nutritional data - use EnergyKcal100g first, fallback to Energy100g
+                    Calories = GetCalories(p.Nutriments),
+                    Protein = ParseDecimal(p.Nutriments?.Proteins100g),
+                    Carbs = ParseDecimal(p.Nutriments?.Carbohydrates100g),
+                    Fats = ParseDecimal(p.Nutriments?.Fat100g),
+                    ServingSize = 100,
                     ImageUrl = p.ImageUrl
                 })
                 .Take(maxResults)
                 .ToList();
-
-            return results;
         }
         catch (Exception ex)
         {
-            // Log error and return empty list (graceful degradation)
             Console.WriteLine($"Error searching OpenFoodFacts: {ex.Message}");
             return new List<FoodSearchResult>();
         }
     }
 
-    /// <summary>
-    /// Get or create a local FoodItem from external source (Hybrid Strategy)
-    /// This is the KEY method that implements the caching logic
-    /// </summary>
     public async Task<Guid> GetOrCreateLocalFoodItemAsync(string externalId, string externalSource)
     {
-        // Step 1: Check if food item already exists in local database
+        // 1. Check Local Cache
         var existingFoodItem = await _context.FoodItems
             .FirstOrDefaultAsync(f => f.ExternalId == externalId && f.ExternalSource == externalSource);
 
         if (existingFoodItem != null)
         {
-            // Food item already cached - update usage stats
             existingFoodItem.TimesLogged++;
             existingFoodItem.LastUsedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return existingFoodItem.Id;
         }
 
-        // Step 2: Food item not in local DB - fetch from external API
-        if (externalSource == "OpenFoodFacts")
+        // 2. Fetch from External API (Case-Insensitive check)
+        if (string.Equals(externalSource, "OpenFoodFacts", StringComparison.OrdinalIgnoreCase))
         {
             var foodData = await FetchFromOpenFoodFactsAsync(externalId);
             
             if (foodData == null)
                 throw new Exception($"Could not fetch food item from OpenFoodFacts: {externalId}");
 
-            // Step 3: Create and save to local database
             var newFoodItem = new FoodItem
             {
                 Id = Guid.NewGuid(),
                 ExternalId = externalId,
-                ExternalSource = externalSource,
+                ExternalSource = "OpenFoodFacts",
                 Name = foodData.Name,
                 Brand = foodData.Brand,
                 ServingSize = foodData.ServingSize,
@@ -111,11 +97,11 @@ public class FoodService : IFoodService
                 Protein = foodData.Protein,
                 Carbs = foodData.Carbs,
                 Fats = foodData.Fats,
-                Fiber = 0, // OpenFoodFacts might have this
-                Sugar = 0,
                 ImageUrl = foodData.ImageUrl,
                 TimesLogged = 1,
-                LastUsedAt = DateTime.UtcNow
+                LastUsedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false
             };
 
             _context.FoodItems.Add(newFoodItem);
@@ -127,24 +113,19 @@ public class FoodService : IFoodService
         throw new NotSupportedException($"External source '{externalSource}' is not supported");
     }
 
-    /// <summary>
-    /// Fetch detailed food data from OpenFoodFacts by product code
-    /// </summary>
     private async Task<FoodSearchResult?> FetchFromOpenFoodFactsAsync(string productCode)
     {
         try
         {
             var url = $"https://world.openfoodfacts.org/api/v0/product/{productCode}.json";
-            
             var response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
 
-            var jsonString = await response.Content.ReadAsStringAsync();
-            var productResponse = JsonSerializer.Deserialize<OpenFoodFactsProductResponse>(jsonString,
+            using var stream = await response.Content.ReadAsStreamAsync();
+            var productResponse = await JsonSerializer.DeserializeAsync<OpenFoodFactsProductResponse>(stream,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-            if (productResponse?.Product == null)
-                return null;
+            if (productResponse?.Product == null) return null;
 
             var p = productResponse.Product;
             return new FoodSearchResult
@@ -152,10 +133,10 @@ public class FoodService : IFoodService
                 ExternalId = productCode,
                 Name = p.ProductName ?? "Unknown",
                 Brand = p.Brands,
-                Calories = ParseDecimal(p.EnergyKcal100g),
-                Protein = ParseDecimal(p.Proteins100g),
-                Carbs = ParseDecimal(p.Carbohydrates100g),
-                Fats = ParseDecimal(p.Fat100g),
+                Calories = GetCalories(p.Nutriments),
+                Protein = ParseDecimal(p.Nutriments?.Proteins100g),
+                Carbs = ParseDecimal(p.Nutriments?.Carbohydrates100g),
+                Fats = ParseDecimal(p.Nutriments?.Fat100g),
                 ServingSize = 100,
                 ImageUrl = p.ImageUrl
             };
@@ -166,44 +147,86 @@ public class FoodService : IFoodService
         }
     }
 
+    private static decimal GetCalories(OpenFoodFactsNutriments? nutriments)
+    {
+        if (nutriments == null) return 0;
+        
+        // Try energy-kcal_100g first (most accurate)
+        var kcal = ParseDecimal(nutriments.EnergyKcal100g);
+        if (kcal > 0) return kcal;
+        
+        // Fallback to energy_100g (might be in kJ, convert to kcal)
+        var energy = ParseDecimal(nutriments.Energy100g);
+        if (energy > 0)
+        {
+            // If value is very high, it's likely kJ - convert to kcal (divide by 4.184)
+            if (energy > 400) return Math.Round(energy / 4.184m, 1);
+            return energy;
+        }
+        
+        return 0;
+    }
+
     private static decimal ParseDecimal(object? value)
     {
         if (value == null) return 0;
-        
         if (value is JsonElement jsonElement)
         {
-            if (jsonElement.ValueKind == JsonValueKind.Number)
-                return jsonElement.GetDecimal();
-            if (jsonElement.ValueKind == JsonValueKind.String)
+            if (jsonElement.ValueKind == JsonValueKind.Number) return jsonElement.GetDecimal();
+            if (jsonElement.ValueKind == JsonValueKind.String) 
                 return decimal.TryParse(jsonElement.GetString(), out var result) ? result : 0;
         }
-
         return decimal.TryParse(value.ToString(), out var parsed) ? parsed : 0;
     }
 }
 
-#region OpenFoodFacts DTOs
+// --- JSON DTOs ---
 
 public class OpenFoodFactsResponse
 {
+    [JsonPropertyName("products")]
     public List<OpenFoodFactsProduct>? Products { get; set; }
 }
 
 public class OpenFoodFactsProductResponse
 {
+    [JsonPropertyName("product")]
     public OpenFoodFactsProduct? Product { get; set; }
 }
 
 public class OpenFoodFactsProduct
 {
+    [JsonPropertyName("code")]
     public string? Code { get; set; }
+
+    [JsonPropertyName("product_name")]
     public string? ProductName { get; set; }
+
+    [JsonPropertyName("brands")]
     public string? Brands { get; set; }
-    public object? EnergyKcal100g { get; set; }
-    public object? Proteins100g { get; set; }
-    public object? Carbohydrates100g { get; set; }
-    public object? Fat100g { get; set; }
+
+    [JsonPropertyName("image_url")]
     public string? ImageUrl { get; set; }
+
+    [JsonPropertyName("nutriments")]
+    public OpenFoodFactsNutriments? Nutriments { get; set; }
 }
 
-#endregion
+public class OpenFoodFactsNutriments
+{
+    [JsonPropertyName("energy-kcal_100g")]
+    public object? EnergyKcal100g { get; set; }
+
+    // Fallback for alternative field name
+    [JsonPropertyName("energy_100g")]
+    public object? Energy100g { get; set; }
+
+    [JsonPropertyName("proteins_100g")]
+    public object? Proteins100g { get; set; }
+
+    [JsonPropertyName("carbohydrates_100g")]
+    public object? Carbohydrates100g { get; set; }
+
+    [JsonPropertyName("fat_100g")]
+    public object? Fat100g { get; set; }
+}
